@@ -8,6 +8,8 @@ dependencies = [
     "econiq-schemas",
     "econiq-data-models",
     "econiq-llm",
+    "econiq-ingestion",
+    "econiq-agents",
 ]
 
 [dependency-groups]
@@ -28,6 +30,8 @@ members = [
     "packages/schemas",
     "packages/data-models",
     "packages/llm",
+    "services/ingestion",
+    "services/agents",
 ]
 
 [tool.uv.sources]
@@ -35,6 +39,8 @@ econiq-ontology = { workspace = true }
 econiq-schemas = { workspace = true }
 econiq-data-models = { workspace = true }
 econiq-llm = { workspace = true }
+econiq-ingestion = { workspace = true }
+econiq-agents = { workspace = true }
 
 [tool.ruff]
 line-length = 100
@@ -54,6 +60,12 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["ANN"]
+# Text normalization is *about* curly quotes, en dashes and non-breaking
+# spaces: the literals are the subject, not a typo.
+"**/parsing.py" = ["RUF001"]
+"**/document_agents.py" = ["RUF001"]
+"**/test_parsing.py" = ["RUF001"]
+"**/test_document_agents.py" = ["RUF001"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -64,6 +76,8 @@ mypy_path = [
     "packages/schemas/src",
     "packages/data-models/src",
     "packages/llm/src",
+    "services/ingestion/src",
+    "services/agents/src",
 ]
 explicit_package_bases = true
 disallow_untyped_decorators = false
@@ -72,12 +86,16 @@ disallow_untyped_decorators = false
 exclude = ["/tests/", "/alembic/versions/"]
 
 [[tool.mypy.overrides]]
-# The provider SDK is an optional extra; the import is guarded at runtime.
-module = ["anthropic.*", "pgvector.*"]
+# Optional extras and untyped SDKs. Every import here is guarded at runtime.
+module = ["anthropic.*", "pgvector.*", "boto3.*", "botocore.*", "trafilatura.*", "pymupdf.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["packages"]
+testpaths = ["packages", "services"]
+# Several packages have a tests/conftest.py; importlib mode keeps their module
+# names distinct without scattering __init__.py files through the test trees.
+addopts = "--import-mode=importlib"
+consider_namespace_packages = true
 asyncio_mode = "auto"
 markers = [
     "integration: requires the docker-compose stack (Postgres/MinIO/Redis)",

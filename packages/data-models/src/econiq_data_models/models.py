@@ -259,6 +259,14 @@ class Document(Base, TimestampMixin):
     language: Mapped[str] = mapped_column(String(8), nullable=False, default="en")
     storage_uri: Mapped[str | None] = mapped_column(Text, nullable=True)
     content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    raw_content: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment=(
+            "Normalized text, mirrored here when small enough that agents should "
+            "not pay an object-store round trip. The S3 copy stays authoritative."
+        ),
+    )
     extraction_status: Mapped[ExtractionStatus] = mapped_column(
         e.EXTRACTION_STATUS, nullable=False, index=True
     )

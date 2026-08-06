@@ -137,8 +137,17 @@ class Agent[TIn: AgentInput, TOut: AgentOutput](ABC):
         self.service = service
         self.model = model or service.model_for(self.tier)
         self.evaluators: tuple[Evaluator, ...] = tuple(
-            evaluators if evaluators is not None else (CitationEvaluator(),)
+            evaluators if evaluators is not None else self.default_evaluators()
         )
+
+    def default_evaluators(self) -> Sequence[Evaluator]:
+        """Checks that run unless the caller supplies its own.
+
+        Citation resolution is the universal one — every agent that cites is
+        checked for fabricated ids. Agents with a stronger check available
+        override this.
+        """
+        return (CitationEvaluator(),)
 
     @abstractmethod
     def build_user_content(self, payload: TIn) -> str:

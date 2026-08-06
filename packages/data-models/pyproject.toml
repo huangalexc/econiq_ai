@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "PostgreSQL system of record: SQLAlchemy models and Alembic migrations"
 requires-python = ">=3.12"
 dependencies = [
-    "SQLAlchemy>=2.0.35",
+    # asyncio support in SQLAlchemy needs greenlet; it is not pulled in by the
+    # base install on every platform.
+    "SQLAlchemy[asyncio]>=2.0.35",
     "alembic>=1.13",
     "pgvector>=0.3",
     "psycopg[binary]>=3.2",

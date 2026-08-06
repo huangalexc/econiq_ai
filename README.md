@@ -18,7 +18,7 @@ map.
 
 ## Status
 
-Phase 0 foundation — issues **#1–#4** of the 17-issue Phase 0 plan.
+Phase 0 in progress — issues **#1–#6** of the 17-issue Phase 0 plan.
 
 | Issue | Delivered |
 |---|---|
@@ -26,9 +26,12 @@ Phase 0 foundation — issues **#1–#4** of the 17-issue Phase 0 plan.
 | #2 Postgres system of record | 25 tables, temporal versioning, pgvector, Alembic |
 | #3 Pydantic ontology & schemas | `packages/ontology`, `packages/schemas` — the contract everything else depends on |
 | #4 LLM abstraction | `packages/llm` — providers, agent runtime, prompt versioning, cost tracking |
+| #5 Document ingestion | `services/ingestion` — S3/MinIO storage, parsing to sections, idempotent ingest, `DocumentIngested` |
+| #6 Classifier & Claim extraction | `services/agents` — the first two agents, with quote grounding verified in code |
 
-Issues **#5–#17** (ingestion, the fourteen agents, orchestration, API, eval
-harness, end-to-end validation) are not started. Issue #17 is the phase gate.
+Issues **#7–#17** (event resolution, the remaining twelve agents,
+orchestration, API, eval harness, end-to-end validation) are not started.
+Issue #17 is the phase gate.
 
 ## Quick start
 
@@ -51,7 +54,10 @@ make up migrate
 
 ```
 apps/          web (Phase 1), api (#15)
-services/      ingestion, agents, quant, historical, alerts, graph
+services/
+  ingestion/   document acquisition, storage, parsing (#5)
+  agents/      agent implementations over packages/llm (#6 onward)
+  quant, historical, alerts, graph — later phases
 packages/
   ontology/    Pydantic ontology — Document…Asset, archetype State machines
   schemas/     typed agent I/O contracts, one per agent
@@ -112,6 +118,14 @@ contract everything downstream depends on:
 - **`asset_states` uses JSONB for its five dimension groups.** The contract is
   pinned in `econiq_ontology.asset_layer`; committing to columns before a Phase 3
   data vendor is chosen would be guessing.
+- **A Claim whose quote is not in the document is dropped, not stored.**
+  `ClaimWriter` resolves every quoted span against the parsed text and rejects
+  what it cannot find; the rejection rate is the extraction hallucination
+  metric issue #6 asks for. The alternative — storing the model's own guessed
+  offsets — makes the provenance inspector confidently wrong.
+- **Quantitative documents are not sent to Claim extraction.** The classifier
+  routes them to the (not yet built) deterministic ETL service, because
+  reconstructing figures from prose with an LLM is what tech rec §20 forbids.
 - **Only the Anthropic provider is implemented.** The abstraction is
   provider-neutral and `ScriptedProvider` makes every agent testable offline;
   OpenAI/Google/local are a class implementing `LLMProvider` away.

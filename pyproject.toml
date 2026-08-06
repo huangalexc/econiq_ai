@@ -66,6 +66,8 @@ ignore = [
 "**/document_agents.py" = ["RUF001"]
 "**/test_parsing.py" = ["RUF001"]
 "**/test_document_agents.py" = ["RUF001"]
+# Journal summaries render deltas the way PRD §21 shows them ("− weakened").
+"**/process_persistence.py" = ["RUF001"]
 
 [tool.mypy]
 python_version = "3.12"

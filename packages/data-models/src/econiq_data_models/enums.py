@@ -58,6 +58,17 @@ class AgentRunStatus(StrEnum):
     """Output validated but failed a deterministic evaluation check."""
 
 
+class JournalEntryKind(StrEnum):
+    """What a journal entry records (PRD §21)."""
+
+    CREATED = "created"
+    EVIDENCE_ADDED = "evidence_added"
+    BELIEF_CHANGE = "belief_change"
+    STATE_CHANGE = "state_change"
+    REVIEW_REQUESTED = "review_requested"
+    INVALIDATED = "invalidated"
+
+
 class EmbeddingKind(StrEnum):
     DOCUMENT_BODY = "document_body"
     CLAIM_TEXT = "claim_text"
@@ -99,3 +110,4 @@ REQUIREMENT_NODE_KIND = pg_enum(RequirementNodeKind, "requirement_node_kind")
 AGENT_RUN_STATUS = pg_enum(AgentRunStatus, "agent_run_status")
 EMBEDDING_KIND = pg_enum(EmbeddingKind, "embedding_kind")
 VALUE_BASIS = pg_enum(ValueBasis, "value_basis")
+JOURNAL_ENTRY_KIND = pg_enum(JournalEntryKind, "journal_entry_kind")

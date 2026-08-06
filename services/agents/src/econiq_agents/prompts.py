@@ -151,3 +151,80 @@ recommend any action.\
 """,
     )
 )
+
+
+PROCESS_DISCOVERY_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="process_discovery",
+        version="1.0.0",
+        description="Decide what an Event means for the Process graph (agent doc §6.1).",
+        template="""\
+Given this Event and the existing Process graph, decide what the Event means \
+for each.
+
+An Economic Process is a persistent, evolving real-world development that \
+accumulates evidence over time — "domestic strategic-mineral security", not \
+"the Pentagon bought a stake". If the Event is one occurrence within a \
+development the graph already tracks, it is evidence for that Process, not a \
+new one.
+
+Return:
+1. new_processes — Processes that should exist and do not. Creating one is \
+expensive to undo, so propose a new Process only when the Event points to a \
+development that no existing Process covers. Give it a name, a slug, a \
+description of the development itself (not of this Event), and the causal \
+mechanism by which the Event gives rise to it.
+2. affected_processes — existing Processes this Event bears on. For each, \
+state the implication:
+     materially_changes  the Event should change what the system believes
+     provides_evidence   the Event corroborates existing belief without \
+changing it
+     no_implication      the Event touches the Process but changes nothing
+   and give the causal mechanism, the direction (does this advance or retard \
+the Process), and your confidence.
+3. unaffected_process_ids — Processes you considered and ruled out.
+
+Cite the supplied Claim ids that support each judgement, and state what you \
+could not determine.
+
+Do not identify stocks, tickers or companies to invest in. Do not estimate the \
+Process's State — that is a separate step. Do not propose a Process because the \
+Event is interesting; propose one because a durable development is underway.\
+""",
+    )
+)
+
+
+PROCESS_UPDATE_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="process_update",
+        version="1.0.0",
+        description="Apply an evidenced delta to an existing Process (agent doc §6.2).",
+        template="""\
+Update this existing Economic Process using the supplied Event.
+
+Apply a delta. Do not rewrite the thesis: a Process that has held the same \
+belief through fifteen Events is a different object from one re-derived fifteen \
+times, and the difference only survives if you change what changed.
+
+Determine:
+- belief_changes: which specific beliefs are strengthened, weakened or \
+unchanged, and why. Name the belief, do not summarise the Process.
+- feature_deltas: signed changes to named State features (for example \
+capex_acceleration +0.08). Only features this Event actually speaks to.
+- state_change_recommended and proposed_state: whether the Event moves the \
+Process to a different lifecycle State. Most Events do not. Recommend one only \
+when the evidence is about the transition itself.
+- confidence_after: your confidence in the Process after this Event
+- bottlenecks_may_have_changed / capabilities_may_have_changed: flags for \
+whether those layers need revisiting. Do not revisit them here.
+- contradicts_existing_beliefs: whether this Event cuts against what the \
+Process currently holds
+
+Every change must cite the supplied Claim ids that support it. An update with \
+no citation is not an update.
+
+Leave unaffected parts of the Process alone, and do not mention Assets.\
+""",
+    )
+)

@@ -38,6 +38,7 @@ from econiq_agents.event_stage import (
     ResolvedEvent,
 )
 from econiq_agents.extraction import DocumentExtractionStage, ExtractionOutcome
+from econiq_agents.graph_writer import GraphWriter, IllegalEdgeError, WrittenEdge
 from econiq_agents.independence import (
     IndependenceAssessment,
     SourceDocument,
@@ -50,11 +51,20 @@ from econiq_agents.persistence import (
     ClaimPersistResult,
     ClaimWriter,
 )
+from econiq_agents.process_agents import (
+    LayerBoundaryEvaluator,
+    ProcessDiscoveryAgent,
+    ProcessUpdateAgent,
+)
+from econiq_agents.process_persistence import AppliedUpdate, PersistedProcess, ProcessWriter
+from econiq_agents.process_stage import ProcessDiscoveryStage, ProcessOutcome
 from econiq_agents.prompts import (
     CLAIM_EXTRACTION_V1,
     DOCUMENT_CLASSIFIER_V1,
     EVENT_RESOLUTION_V1,
     EVENT_SIGNIFICANCE_V1,
+    PROCESS_DISCOVERY_V1,
+    PROCESS_UPDATE_V1,
 )
 
 __all__ = [
@@ -62,7 +72,10 @@ __all__ = [
     "DOCUMENT_CLASSIFIER_V1",
     "EVENT_RESOLUTION_V1",
     "EVENT_SIGNIFICANCE_V1",
+    "PROCESS_DISCOVERY_V1",
+    "PROCESS_UPDATE_V1",
     "AgentRunRecorder",
+    "AppliedUpdate",
     "ClaimExtractionAgent",
     "ClaimPersistResult",
     "ClaimWriter",
@@ -77,15 +90,25 @@ __all__ = [
     "EventSignificanceAgent",
     "EventWriter",
     "ExtractionOutcome",
+    "GraphWriter",
     "HashingEmbedder",
+    "IllegalEdgeError",
     "IndependenceAssessment",
+    "LayerBoundaryEvaluator",
     "PersistedEvent",
+    "PersistedProcess",
+    "ProcessDiscoveryAgent",
+    "ProcessDiscoveryStage",
+    "ProcessOutcome",
+    "ProcessUpdateAgent",
+    "ProcessWriter",
     "PropagationDecision",
     "PropagationPolicy",
     "QuoteGroundingEvaluator",
     "ResolvedEvent",
     "ResolvedSpan",
     "SourceDocument",
+    "WrittenEdge",
     "assess_independence",
     "clusters_from_pairs",
     "cosine_similarity",

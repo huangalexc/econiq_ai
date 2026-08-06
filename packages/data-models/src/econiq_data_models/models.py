@@ -398,6 +398,15 @@ class Process(Base, RevisionMixin):
     merged_into: Mapped[uuid.UUID | None] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("nodes.node_id", ondelete="RESTRICT"), nullable=True
     )
+    requires_review: Mapped[bool] = mapped_column(
+        nullable=False,
+        default=False,
+        index=True,
+        comment=(
+            "Human review hook (agent doc §23). A false Process contaminates "
+            "the whole graph, so newly discovered ones are flagged."
+        ),
+    )
     agent_run_id: Mapped[uuid.UUID | None] = _run_fk()
 
     __table_args__ = (
@@ -929,3 +938,40 @@ class Embedding(Base, TimestampMixin):
             postgresql_ops={"embedding": "vector_cosine_ops"},
         ),
     )
+
+
+class JournalEntry(Base, ObservationMixin):
+    """A chronological record of what changed and why (PRD §21).
+
+    Immutable and append-only. The revision tables record *what the system
+    believes*; the journal records *why it changed its mind*, in the form a
+    human reads: "state confidence 7.2 → 7.8, + utility capex, + interconnection
+    acceleration". Without it the graph can be reconstructed but not explained.
+    """
+
+    __tablename__ = "journal_entries"
+
+    journal_entry_id: Mapped[uuid.UUID] = uuid_pk()
+    subject_id: Mapped[uuid.UUID] = _node_fk()
+    subject_type: Mapped[EntityType] = mapped_column(e.ENTITY_TYPE, nullable=False)
+    kind: Mapped[e.JournalEntryKind] = mapped_column(
+        e.JOURNAL_ENTRY_KIND, nullable=False, index=True
+    )
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence_before: Mapped[float | None] = mapped_column(Float, nullable=True)
+    confidence_after: Mapped[float | None] = mapped_column(Float, nullable=True)
+    changes: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list,
+        comment="Signed changes: [{direction, statement, rationale}, …].",
+    )
+    triggering_event_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("nodes.node_id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    agent_run_id: Mapped[uuid.UUID | None] = _run_fk()
+
+    __table_args__ = (Index("ix_journal_entries_subject_time", "subject_id", "observed_at"),)

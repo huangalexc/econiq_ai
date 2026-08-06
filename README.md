@@ -18,7 +18,7 @@ map.
 
 ## Status
 
-Phase 0 in progress — issues **#1–#7** of the 17-issue Phase 0 plan.
+Phase 0 in progress — issues **#1–#8** of the 17-issue Phase 0 plan.
 
 | Issue | Delivered |
 |---|---|
@@ -29,10 +29,11 @@ Phase 0 in progress — issues **#1–#7** of the 17-issue Phase 0 plan.
 | #5 Document ingestion | `services/ingestion` — S3/MinIO storage, parsing to sections, idempotent ingest, `DocumentIngested` |
 | #6 Classifier & Claim extraction | `services/agents` — the first two agents, with quote grounding verified in code |
 | #7 Event resolution | clustering with pgvector candidate retrieval, computed source independence, and a deterministic propagation gate |
+| #8 Process discovery & update | persistent Processes accumulating evidence as revisions, with a journal and typed-edge enforcement |
 
-Issues **#8–#17** (the Process, Bottleneck, Capability and Asset agents,
-orchestration, API, eval harness, end-to-end validation) are not started.
-Issue #17 is the phase gate.
+Issues **#9–#17** (Archetype/State, Critic, Bottleneck, Capability and Asset
+agents, orchestration, API, eval harness, end-to-end validation) are not
+started. Issue #17 is the phase gate.
 
 ## Quick start
 
@@ -132,6 +133,16 @@ contract everything downstream depends on:
   names publishers; `assess_independence` collapses same-publisher pieces and
   syndicated reprints (token-shingle overlap) and returns what is actually
   behind a cluster. Twenty outlets carrying one wire story score 1.
+- **`ALLOWED_EDGES` is enforced at the write.** Every relationship goes through
+  `GraphWriter`, which checks the (source, type, target) triple and raises. An
+  illegal edge means an agent reasoned past its layer, so it never lands.
+- **New Processes are flagged, not gated.** A false Process contaminates the
+  graph (agent doc §23), so discovery creates them as `candidate` with
+  `requires_review` set and journals the request. Phase 0 has no reviewer, and
+  blocking on one nobody has assigned would just stop the pipeline.
+- **Corroboration does not write a revision.** An Event that changes no belief
+  adds evidence and a journal entry only — otherwise "how often did this
+  Process actually move?" becomes unanswerable.
 - **The default embedder is lexical, not semantic.** `HashingEmbedder` is
   deterministic and dependency-free so retrieval, tests and offline development
   work without a vendor; a semantic provider plugs in behind `Embedder`. It

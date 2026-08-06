@@ -9,6 +9,7 @@ from econiq_data_models.base import EMBEDDING_DIM, Base
 from econiq_data_models.enums import (
     AgentRunStatus,
     EmbeddingKind,
+    JournalEntryKind,
     RequirementNodeKind,
     ValueBasis,
 )
@@ -27,6 +28,7 @@ from econiq_data_models.models import (
     Event,
     EventClaim,
     EvidenceLink,
+    JournalEntry,
     ModelVersion,
     Node,
     Process,
@@ -66,6 +68,8 @@ __all__ = [
     "Event",
     "EventClaim",
     "EvidenceLink",
+    "JournalEntry",
+    "JournalEntryKind",
     "ModelVersion",
     "Node",
     "Process",

@@ -1,0 +1,1187 @@
+# Investment Intelligence Platform — Overview PRD
+
+**Status:** Product Requirements Document  
+**Audience:** Product, engineering, quantitative research, ML/agent engineering, design, and founding team  
+**Purpose:** High-level product specification for an evidence-backed, Process-first investment intelligence SaaS.
+
+---
+
+## 1. Executive Summary
+
+The Investment Intelligence Platform is a research and decision-support system designed to identify, model, monitor, and evaluate emerging economic Processes and translate them into investable Asset expressions.
+
+The central premise is that large investment opportunities often arise not from isolated securities but from **underlying economic Processes** whose consequences propagate through Bottlenecks, Capabilities, and ultimately Assets.
+
+The system therefore models:
+
+> **Evidence → Events → Economic Processes → Process States → Bottlenecks → Capabilities → Assets → Trades**
+
+The product is intended to help users discover emerging trends, understand how those trends are evolving, identify the constraints and capabilities they create, find the Assets best positioned to benefit, construct investment cases, monitor those theses over time, and evaluate the system's own historical performance.
+
+The product should not function primarily as an LLM chatbot that gives stock recommendations. LLMs are one component of a larger architecture involving structured data, event extraction, graph relationships, quantitative analysis, historical analogues, evidence provenance, iterative critique, and explicit evaluation.
+
+This document is intentionally overview-level. Detailed specifications are maintained in the companion documents:
+
+- `economic_process_asset_ontology.md` — canonical ontology and domain model.
+- `agent_architecture_and_evaluation.md` — agents, responsibilities, prompts, orchestration, and evaluation.
+- `ui_concept.md` — detailed UX/UI architecture and user interaction model.
+
+---
+
+# 2. Product Vision
+
+Build a continuously updated representation of the economic state space that allows an investor to move from:
+
+> **"What is changing?"**
+
+to:
+
+> **"What is the strongest investable expression of that change?"**
+
+while retaining a complete chain of reasoning and evidence.
+
+The product should make it possible to inspect not only the system's conclusion, but:
+
+- what it believes,
+- why it believes it,
+- what evidence changed that belief,
+- which assumptions are critical,
+- which historical episodes are comparable,
+- what could invalidate the thesis,
+- and how the resulting Asset expression is performing.
+
+The long-term vision is a research system that combines the strengths of:
+
+- LLM reasoning,
+- structured economic modeling,
+- quantitative analysis,
+- historical pattern matching,
+- graph-based inference,
+- and human investment judgment.
+
+---
+
+# 3. Problem Statement
+
+Traditional investment research tools are generally organized around securities, documents, prices, or broad market categories.
+
+This creates several problems when researching large emerging trends:
+
+1. A major economic development may affect many industries and Asset classes.
+2. The most obvious Asset may not be the best expression of the underlying Process.
+3. Multiple upstream Processes may converge on a single Capability.
+4. A Process evolves through identifiable stages, and the same Asset can have very different opportunity characteristics at different stages.
+5. News is fragmented across thousands of documents.
+6. Evidence is duplicated and correlated.
+7. LLM-generated investment advice can sound authoritative without providing a robust causal or quantitative foundation.
+8. Historical analogues are difficult to identify and compare systematically.
+9. Existing tools generally do not preserve a persistent, auditable history of why an investment thesis changed.
+
+The platform addresses these problems by treating the **Economic Process and its evolution** as the primary unit of research.
+
+---
+
+# 4. Product Principles
+
+## 4.1 Process-first
+
+The system should begin with economic Processes rather than securities.
+
+An Asset is an investable projection of an upstream Process/Capability configuration.
+
+---
+
+## 4.2 Evidence-backed
+
+Important conclusions must be traceable to source evidence.
+
+Every material statement should be attributable to:
+
+- a document,
+- an Event,
+- a quantitative observation,
+- a historical observation,
+- or an explicitly identified model inference.
+
+---
+
+## 4.3 Temporal
+
+Processes are dynamic.
+
+The system must preserve:
+
+- historical State,
+- State transitions,
+- evidence accumulation,
+- score changes,
+- and point-in-time information availability.
+
+---
+
+## 4.4 Explicit uncertainty
+
+The system should distinguish between:
+
+- evidence,
+- inference,
+- model belief,
+- historical analogy,
+- and speculation.
+
+It should not present uncertain model outputs as facts.
+
+---
+
+## 4.5 Thesis quality ≠ Asset quality
+
+The system should separately evaluate:
+
+### Thesis quality
+
+How compelling is the underlying Process?
+
+### Asset expression quality
+
+How attractive is a particular Asset as an expression of that Process?
+
+This distinction is fundamental to the product.
+
+---
+
+## 4.6 LLMs are components, not authorities
+
+LLMs should be used for tasks such as:
+
+- extraction,
+- semantic classification,
+- hypothesis generation,
+- causal reasoning,
+- synthesis,
+- critique,
+- and natural-language interaction.
+
+They should be constrained by:
+
+- structured ontology,
+- source grounding,
+- deterministic calculations,
+- quantitative tools,
+- historical data,
+- independent critique,
+- and evaluation.
+
+---
+
+# 5. Target Users
+
+## Primary users
+
+### Fundamental / thematic investors
+
+Users who research:
+
+- technology adoption,
+- industrial trends,
+- commodities,
+- regulation,
+- geopolitical supply chains,
+- business model disruption,
+- and structural macroeconomic Processes.
+
+### Professional investment researchers
+
+Analysts who need:
+
+- evidence provenance,
+- reproducible research,
+- quantitative comparison,
+- historical precedent,
+- and monitoring.
+
+### Quantitative / systematic researchers
+
+Users interested in:
+
+- structured economic states,
+- historical analogues,
+- Process signals,
+- Asset ranking,
+- and eventual probabilistic forecasting.
+
+### Investment teams
+
+Teams that need a shared research graph and persistent thesis history.
+
+---
+
+# 6. Core User Jobs
+
+The product should support five principal jobs.
+
+## 6.1 Find hot trends
+
+Identify Processes where:
+
+- evidence is accelerating,
+- State is changing,
+- Bottlenecks are emerging,
+- or market attention may be lagging.
+
+---
+
+## 6.2 Track Process evolution
+
+Understand:
+
+- current Process State,
+- State trajectory,
+- evidence accumulation,
+- contradictions,
+- Bottleneck evolution,
+- and historical analogues.
+
+---
+
+## 6.3 Research investment ideas
+
+Move from:
+
+> Process → Bottleneck → Capability → Asset
+
+and identify multiple possible expressions.
+
+---
+
+## 6.4 Build an investment case
+
+For a particular Asset, determine:
+
+- Process exposure,
+- Capability exposure,
+- idiosyncratic advantages,
+- financial characteristics,
+- valuation,
+- technical behavior,
+- crowding,
+- historical analogues,
+- counterarguments,
+- and thesis risks.
+
+---
+
+## 6.5 Monitor trades
+
+Monitor whether:
+
+- the Process is strengthening,
+- the Bottleneck persists,
+- Capability requirements remain valid,
+- Asset exposure remains intact,
+- and Asset-specific conditions remain favorable.
+
+The system should monitor **thesis integrity**, not merely price.
+
+---
+
+# 7. Core Domain Model
+
+The detailed ontology is specified in:
+
+> `economic_process_asset_ontology.md`
+
+At overview level, the system contains the following principal objects.
+
+### Evidence / Document
+
+The raw information entering the system.
+
+### Event
+
+A normalized occurrence extracted from one or more documents.
+
+### Economic Process
+
+A persistent economic phenomenon evolving through time.
+
+### Process State
+
+The current stage of a Process.
+
+Examples may include:
+
+- Initial Discovery
+- Early Adoption
+- Acceleration
+- Infrastructure Expansion
+- Euphoria
+- Saturation
+- Maturity
+
+The exact State machine is archetype-specific.
+
+### Bottleneck
+
+A constraint that prevents or limits the Process from achieving its implied outcome.
+
+### Capability
+
+A concrete capability required to satisfy a Bottleneck or participate in a Process.
+
+### Asset
+
+An investable security or instrument providing exposure to one or more Capabilities and Processes.
+
+### Trade
+
+A future implementation layer for expressing an Asset thesis, initially limited in scope.
+
+---
+
+# 8. Causal / Translation Model
+
+The primary research flow is:
+
+```text
+Documents
+    ↓
+Events
+    ↓
+Economic Processes
+    ↓
+Process State
+    ↓
+Bottlenecks
+    ↓
+Capabilities
+    ↓
+Assets
+    ↓
+Trade
+
+The graph is not strictly linear.
+
+Multiple upstream Processes can feed a single downstream Process, Bottleneck, or Capability.
+
+Example:
+
+AI Infrastructure ─────┐
+                       ├──► Domestic Semiconductor Fabs
+CHIPS Act ─────────────┘
+
+Likewise, a single Process may create multiple downstream branches:
+
+AI Adoption
+    ├──► Chips
+    ├──► Memory
+    ├──► Networking
+    ├──► Power
+    ├──► Cooling
+    └──► Cloud Compute
+
+This allows the system to identify confluences rather than treating every Process as an isolated thematic bucket.
+
+---
+
+# 9. Process Archetypes
+
+The system should organize Processes into archetypes because different Processes:
+
+evolve differently,
+implicate different Asset classes,
+have different State machines,
+have different measurable indicators,
+and have different historical analogues.
+
+Initial archetypes include:
+
+Infrastructure / S-curve adoption
+Commodity supply cycles
+Industrial bottlenecks
+Regulatory implementation
+Business model disruption
+
+Additional archetypes can be introduced as historical evaluation demonstrates their usefulness.
+
+Archetype-specific behavior should govern:
+
+State definitions,
+indicators,
+historical matching,
+likely Asset classes,
+and evaluation metrics.
+---
+
+# 10. Investment Thesis Architecture
+
+A thesis should not simply be a textual statement.
+
+It should be a structured object containing:
+
+upstream Processes,
+current State,
+Bottlenecks,
+Capabilities,
+supporting evidence,
+contradictory evidence,
+historical precedent,
+counterfactuals,
+confidence dimensions,
+candidate Assets,
+and temporal evolution.
+
+Thesis quality should be multidimensional.
+
+Potential dimensions include:
+
+Logical Coherence
+Accumulated Evidence
+Evidence Independence
+Process-State Confidence
+Historical Precedent
+Counterfactual Robustness
+Magnitude / Economic Scope
+Timing / Stage Quality
+
+The system should avoid reducing these dimensions to a single unexplained percentage.
+
+---
+
+# 11. Asset Expression Architecture
+
+Asset selection is a separate layer.
+
+For each candidate Asset, evaluate dimensions such as:
+
+Process exposure,
+Capability exposure,
+financial quality,
+first-mover advantage,
+vertical integration,
+market share,
+strategic positioning,
+institutional ownership,
+valuation,
+technical behavior,
+liquidity,
+crowding,
+and other idiosyncratic characteristics.
+
+The system should explicitly answer:
+
+Is this a good Process?
+
+and separately:
+
+Is this a good Asset expression of that Process?
+
+---
+
+# 12. Historical Learning
+
+Historical analogues are central to the long-term system.
+
+The system should not merely find similar companies or headlines.
+
+It should identify:
+
+comparable Process archetypes,
+comparable Process States,
+comparable Bottlenecks,
+comparable Capability configurations,
+Assets with similar characteristics,
+and subsequent historical outcomes.
+
+The goal is eventually to estimate how the current Process configuration has historically evolved.
+
+This provides an empirical complement to LLM reasoning.
+
+The initial system should focus on historical pattern matching and conditional comparison, not automatically generating highly precise future probability distributions.
+
+---
+
+# 13. Data and Ingestion
+
+The system must ingest both textual and quantitative information.
+
+Textual sources
+
+Examples:
+
+news,
+regulatory documents,
+company filings,
+government releases,
+industry publications,
+research reports,
+transcripts.
+Quantitative sources
+
+Examples:
+
+earnings,
+financial statements,
+commodity prices,
+production data,
+capacity data,
+market data,
+ownership data,
+valuation metrics,
+technical indicators.
+
+Quantitative data should be normalized through deterministic ETL where possible.
+
+Agentic Python/Pandas analysis can be used for exploratory or higher-order analysis, particularly at the Asset level.
+
+---
+
+# 14. Evidence Processing
+
+A major design requirement is evidence deduplication.
+
+Multiple documents may describe the same underlying Event.
+
+The pipeline should therefore distinguish:
+
+Document
+    ↓
+Document extraction
+    ↓
+Event candidate
+    ↓
+Event deduplication / clustering
+    ↓
+Canonical Event
+    ↓
+Process update
+
+This prevents a single news event from artificially generating dozens of independent pieces of evidence.
+
+Evidence should retain provenance to every contributing document.
+
+---
+
+# 15. Update Architecture
+
+Updates should occur in stages rather than propagating every document through the entire graph synchronously.
+
+Recommended conceptual flow:
+
+Documents
+    ↓
+Extraction
+    ↓
+Event accumulation / deduplication
+    ↓
+Event-triggered Process update
+    ↓
+Process-level evidence accumulation
+    ↓
+Capability / Asset update
+    ↓
+Ranking / alert generation
+
+Updates may be triggered by:
+
+time thresholds,
+evidence-count thresholds,
+materiality thresholds,
+State-change candidates,
+or explicit user requests.
+
+This limits unnecessary LLM calls and creates a manageable audit trail.
+
+---
+
+# 16. Agent Architecture
+
+Detailed specifications are maintained in:
+
+agent_architecture_and_evaluation.md
+
+At a high level, agents/services should cover:
+
+Ingestion
+Document extraction
+Quantitative extraction
+Event extraction
+Event deduplication
+Process modeling
+Process identification
+Process update
+State estimation
+Causal relationship analysis
+Bottleneck identification
+Capability identification
+Asset research
+Asset discovery
+Asset exposure analysis
+Asset fundamental analysis
+Asset quantitative analysis
+Asset ranking
+Historical reasoning
+Historical analogue discovery
+Historical State alignment
+Historical Asset matching
+Outcome analysis
+Critique
+Counterfactual analysis
+Evidence independence
+Thesis critique
+Research-quality auditing
+System learning
+Calibration
+Outcome measurement
+Agent evaluation
+Model/prompt versioning
+
+The system should distinguish deterministic services from LLM agents wherever practical.
+
+---
+
+# 17. User Interface
+
+Detailed UI/UX specifications are maintained in:
+
+ui_concept.md
+
+The central UI concept is a research terminal organized around the ontology.
+
+The primary visual primitives are:
+
+Process Timeline
+State Distribution
+Evidence Timeline
+Dependency Graph
+Emergence Radar
+Capability Explorer
+Asset Comparison Matrix
+Historical Replay
+Thesis Scorecard
+Thesis Journal
+
+The core user journey is:
+
+Discover
+   ↓
+Explore Process
+   ↓
+Understand State
+   ↓
+Identify Bottleneck
+   ↓
+Identify Capability
+   ↓
+Discover Assets
+   ↓
+Compare Assets
+   ↓
+Underwrite Asset
+   ↓
+Review Historical Analogs
+   ↓
+Monitor Thesis
+   ↓
+Evaluate Outcome
+---
+
+# 18. Natural-Language Interface
+
+The platform should provide an LLM-driven research interface, but it should be grounded in structured platform data.
+
+Examples:
+
+"Why did this Process score increase this week?"
+
+"Which Capabilities are downstream of this Process?"
+
+"Which Assets have exposure to both Processes?"
+
+"What evidence contradicts this thesis?"
+
+"Find historical episodes where this Process archetype was in the same State."
+
+"Why is Asset A ranked above Asset B?"
+
+The assistant should retrieve and reason over structured context rather than generate unsupported conclusions.
+
+---
+
+# 19. Explainability and Provenance
+
+Every material system conclusion should be inspectable.
+
+For a claim, the user should be able to see:
+
+Claim
+  ↓
+Supporting evidence
+  ↓
+Events
+  ↓
+Process update
+  ↓
+Model inference
+
+The system should expose:
+
+source document,
+publication/event date,
+extraction timestamp,
+evidence cluster,
+model/agent version,
+relevant calculation,
+confidence,
+supporting evidence,
+contradictory evidence.
+
+This is a core product feature rather than an optional audit tool.
+
+---
+
+# 20. Monitoring and Alerts
+
+Alerts should be semantic rather than price-only.
+
+Examples:
+
+Process
+Process accelerating
+Process decelerating
+State transition
+Contradictory evidence
+Bottleneck
+New Bottleneck
+Bottleneck intensifying
+Bottleneck resolving
+Capability
+Capacity expansion
+Supply disruption
+Demand acceleration
+Asset
+Fundamental deterioration
+Exposure change
+Valuation regime change
+Technical confirmation/invalidation
+Thesis
+Thesis strengthening
+Thesis weakening
+Thesis contradiction
+Thesis invalidation
+
+The system should answer:
+
+"Is the reason I own this Asset still true?"
+
+---
+
+# 21. Research Journal and Temporal Audit
+
+Every Process and monitored Asset should maintain a chronological journal.
+
+Example:
+
+2026-06-12
+State confidence 7.2 → 7.8
+
++ Utility CapEx
++ Interconnection acceleration
++ Nuclear PPAs
+
+2026-06-27
+State confidence 7.8 → 7.5
+
+− Capacity additions
+− Construction slowdown
+
+This provides:
+
+user transparency,
+model accountability,
+historical backtesting,
+and training data for future system improvement.
+
+The system must preserve point-in-time state to prevent hindsight leakage.
+
+---
+
+# 22. Quantitative Analysis
+
+Quantitative analysis is required primarily at the Asset layer in the initial system.
+
+It should support:
+
+financial comparison,
+valuation,
+operating metrics,
+price behavior,
+volume,
+ownership,
+volatility,
+technical structure,
+and relative ranking.
+
+The initial product should not attempt full Trade Quant.
+
+In particular, options positioning and highly detailed conditional probability distributions can remain a later phase.
+
+However, the architecture should preserve the ability to add:
+
+Process State → conditional Asset outcome distribution → horizon-specific trade construction
+
+in a future version.
+
+---
+
+# 23. Security and Data Model Considerations
+
+The system should support:
+
+private user research,
+team workspaces,
+organization-level data,
+user annotations,
+internal documents,
+access controls,
+and shared canonical ontology.
+
+The canonical Process graph may be system-wide while user notes, watchlists, hypotheses, and annotations remain permissioned.
+
+All generated objects should have stable identifiers and version history.
+
+---
+
+# 24. System Architecture — Conceptual
+                         ┌────────────────────┐
+                         │      FRONTEND      │
+                         │ Research Terminal  │
+                         └─────────┬──────────┘
+                                   │
+                         ┌─────────▼──────────┐
+                         │      API / BFF     │
+                         └─────────┬──────────┘
+                                   │
+        ┌──────────────────────────┼───────────────────────────┐
+        │                          │                           │
+        ▼                          ▼                           ▼
+  Graph / Ontology            Evidence Store             Quant Services
+        │                          │                           │
+        └──────────────────────────┼───────────────────────────┘
+                                   │
+                         ┌─────────▼──────────┐
+                         │ Agent / Research   │
+                         │ Orchestration       │
+                         └─────────┬──────────┘
+                                   │
+        ┌──────────────────────────┼───────────────────────────┐
+        │                          │                           │
+        ▼                          ▼                           ▼
+   LLM Agents                Historical Engine            Data Pipeline
+
+The exact infrastructure stack is an implementation decision and should be selected after the ontology and agent contracts stabilize.
+
+---
+
+# 25. MVP Scope
+
+The first release should prove the core research loop rather than implement every possible feature.
+
+Required
+Ontology
+Documents
+Events
+Processes
+Process States
+Bottlenecks
+Capabilities
+Assets
+Ingestion
+Textual document ingestion
+Event extraction
+Deduplication
+Evidence provenance
+Process
+Process creation
+State estimation
+Evidence accumulation
+Basic graph relationships
+Asset
+Asset discovery
+Process/Capability exposure
+Basic quantitative comparison
+Research UI
+Discover screen
+Process screen
+Graph
+Asset screen
+Evidence inspection
+Explainability
+Monitoring
+Watchlist
+Thesis journal
+Basic alerts
+---
+
+# 26. Explicit Non-Goals for MVP
+
+The initial release should not attempt to solve everything.
+
+Not initially required
+Automated options strategy construction
+Portfolio optimization
+Automated execution
+Full trade probability distributions
+Fully autonomous trading
+Precise price targets
+Universal macroeconomic forecasting
+Unbounded causal graph expansion
+Real-time processing of every document through every agent
+A single universal "buy/sell probability"
+
+These can be added after the Process/Asset research system demonstrates empirical value.
+
+---
+
+# 27. Product Evaluation
+
+The product should be evaluated at multiple levels.
+
+System-level
+Process identification precision/recall
+State prediction accuracy
+Asset ranking quality
+Historical analogue quality
+Evidence attribution accuracy
+Calibration
+Extreme opportunity recall
+User-level
+Time from discovery to investment case
+Number of research steps completed
+Evidence inspection rate
+Thesis monitoring engagement
+User correction rate
+Research workspace retention
+Investment-level
+
+Eventually:
+
+Information coefficient
+excess return by ranking bucket
+hit rate
+drawdown
+turnover
+risk-adjusted returns
+extreme-winner recall
+false-positive rate
+
+The system should be evaluated separately by Process Archetype.
+
+---
+
+# 28. Success Criteria
+
+The MVP is successful if it demonstrates that the platform can reliably perform the following loop:
+
+Detect a meaningful Process.
+Aggregate and deduplicate relevant Events.
+Determine a defensible Process State.
+Identify important Bottlenecks.
+Translate Bottlenecks into Capabilities.
+Identify multiple Asset expressions.
+Quantitatively compare Assets.
+Preserve evidence provenance.
+Construct an inspectable investment case.
+Monitor changes to the thesis over time.
+Learn from historical outcomes.
+
+The system does not need to demonstrate universal market prediction.
+
+The initial objective is to establish that this structured workflow produces better research decisions than naive LLM usage or conventional thematic screening.
+
+---
+
+# 29. Long-Term Product Evolution
+Version 1
+
+Research intelligence
+
+Processes
+States
+Bottlenecks
+Capabilities
+Assets
+Evidence
+Historical analogues
+Quantitative Asset comparison
+Version 2
+
+Probabilistic forecasting
+
+horizon-specific conditional distributions,
+Process-to-Asset outcome modeling,
+calibrated State transitions,
+more sophisticated historical matching.
+Version 3
+
+Trade construction
+
+position sizing,
+options,
+risk/reward optimization,
+portfolio interactions,
+scenario analysis.
+Version 4
+
+Decision automation
+
+Potentially:
+
+automated monitoring,
+dynamic thesis updates,
+portfolio-level Process exposure,
+automated research queues,
+and execution integrations.
+
+The system should only move toward automation as empirical validation supports it.
+
+---
+
+# 30. Architectural Priorities
+
+Engineering decisions should prioritize:
+
+Canonical ontology
+Evidence provenance
+Temporal versioning
+Deterministic quantitative calculations
+Clear agent contracts
+Evaluation infrastructure
+Efficient event-driven updates
+Inspectable graph relationships
+Historical point-in-time integrity
+UI responsiveness and explainability
+
+The system's greatest long-term asset is not the individual LLM prompt.
+
+It is the accumulated structured representation of:
+
+what happened → what Process it affected → how the Process evolved → what Capabilities became constrained → which Assets expressed them → what happened afterward.
+
+---
+
+# 31. Companion Specifications
+
+This PRD should be read together with the following documents.
+
+economic_process_asset_ontology.md
+
+The canonical domain ontology.
+
+Contains:
+
+entity definitions,
+relationships,
+Process/State structure,
+Bottleneck and Capability modeling,
+Asset relationships,
+temporal semantics,
+and graph design.
+agent_architecture_and_evaluation.md
+
+The agent/system specification.
+
+Contains:
+
+agent inventory,
+agent responsibilities,
+prompts,
+deterministic vs. LLM boundaries,
+orchestration,
+evaluation metrics,
+calibration,
+historical learning,
+and testing.
+ui_concept.md
+
+The detailed UI/UX specification.
+
+Contains:
+
+information architecture,
+screens,
+visual primitives,
+interaction patterns,
+Process exploration,
+Asset underwriting,
+monitoring,
+alerts,
+search,
+and system performance views.
+
+These three documents should be treated as the detailed implementation references beneath this overview PRD.
+
+---
+
+# 32. Final Product Concept
+
+The platform is fundamentally a temporal economic research graph with an investment expression layer.
+
+Its central loop is:
+
+                ┌──────────────┐
+                │   WORLD /    │
+                │   EVIDENCE   │
+                └──────┬───────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │    EVENTS    │
+                └──────┬───────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │   PROCESS    │
+                └──────┬───────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │    STATE     │
+                └──────┬───────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │  BOTTLENECK  │
+                └──────┬───────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │  CAPABILITY  │
+                └──────┬───────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │    ASSET     │
+                └──────┬───────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │    TRADE     │
+                └──────┬───────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │    OUTCOME   │
+                └──────┬───────┘
+                       │
+                       └──────────► LEARNING
+
+The product's core promise is not:
+
+"AI tells you what to buy."
+
+It is:
+
+"A continuously updated, evidence-backed model of economic Processes helps you discover where important changes are occurring, understand where they are in their evolution, identify the resulting constraints and capabilities, and determine which Assets offer the strongest expressions of those Processes."
+
+That distinction should remain central to every major product and engineering decision.
+"""

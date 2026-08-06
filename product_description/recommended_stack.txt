@@ -1,0 +1,30 @@
+Layer	Technology
+Frontend	Next.js + React + TypeScript
+UI	Tailwind + shadcn/ui
+Graph UI	React Flow
+Visualization	D3 + ECharts/Plotly
+API	FastAPI
+Primary language	Python
+Database	PostgreSQL
+Vector search	pgvector
+Graph projection	Neo4j
+Time series	TimescaleDB
+Object storage	S3
+Analytics	DuckDB + Parquet
+Dataframes	Polars + Pandas
+Quant	NumPy + SciPy + statsmodels + sklearn
+Workflow	Temporal
+Messaging	SQS/SNS initially; Kafka/Redpanda later
+Cache	Redis
+Search	Postgres initially; OpenSearch later
+LLM orchestration	Custom abstraction + LangGraph selectively
+LLM evaluation	Langfuse / Phoenix
+Agent validation	Pydantic
+Code execution	Isolated Python sandbox
+Auth	Clerk/Auth0
+Observability	OpenTelemetry + Grafana + Sentry
+Infrastructure	AWS
+Containers	Docker
+Compute	ECS/Fargate initially
+IaC	Terraform
+CI/CD	GitHub Actions

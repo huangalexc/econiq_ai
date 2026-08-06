@@ -1,0 +1,93 @@
+#####
+
+Phase 0 — Research engine
+
+Build:
+
+Postgres
+S3
+FastAPI
+Python
+Pydantic
+basic LLM abstraction
+document ingestion
+Event extraction
+Process extraction/update
+basic graph
+basic Asset mapping
+
+No fancy frontend yet.
+
+The objective is proving:
+
+Can we reliably turn a stream of documents into a coherent, evolving Process graph?
+
+#####
+
+Phase 1 — Research terminal
+
+Add:
+
+Next.js
+React Flow
+Process timelines
+evidence explorer
+Asset comparison
+thesis journal
+natural-language research interface.
+
+Now the system becomes usable.
+
+#####
+
+Phase 2 — Historical engine
+
+Add:
+
+large historical dataset,
+DuckDB/Parquet,
+historical Process State matching,
+Asset matching,
+replay,
+forward-return analysis.
+
+This is probably where the system begins to become genuinely differentiated.
+
+#####
+
+Phase 3 — Quantitative ranking
+
+Add:
+
+richer market data,
+financial normalization,
+technical analysis,
+cross-sectional Asset ranking,
+empirical Process → Asset relationships,
+calibration.
+
+#####
+
+Phase 4 — Probabilistic forecasting
+
+Only then consider:
+
+Current Process State
+        ↓
+Historical conditional distribution
+        ↓
+Asset outcome distribution
+        ↓
+1M / 3M / 6M / 12M outcomes
+
+And eventually:
+
+Asset
+ ↓
+Trade construction
+ ↓
+Options
+ ↓
+Position sizing
+ ↓
+Portfolio optimization

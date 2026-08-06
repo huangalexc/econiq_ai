@@ -306,3 +306,53 @@ Do not estimate returns, and do not mention Assets.\
 """,
     )
 )
+
+
+PROCESS_CRITIC_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="process_critic",
+        version="1.0.0",
+        description="Adversarial falsification of a Process (agent doc §6.5).",
+        template="""\
+Attempt to falsify the following Economic Process.
+
+Your objective is to find reasons it may be wrong. This is not a balanced \
+review and you are not being asked for a verdict. Language models are good at \
+constructing coherent narratives, and a coherent narrative is exactly what you \
+are being pointed at, so assume the case for it has already been made well \
+enough and look only for what is missing, unsupported or explained better \
+another way.
+
+Work through each of these lines of attack. Where one yields nothing, say so \
+and move on rather than inventing a weak objection to fill it:
+
+    unsupported_assumption      a step the thesis needs but the evidence does \
+not establish
+    missing_causal_link         a gap between the evidence and the conclusion \
+drawn from it
+    contradictory_evidence      supplied evidence that cuts against the thesis
+    alternative_explanation     a different account that fits the same evidence
+    historical_counterexample   a comparable case where this pattern did not \
+hold
+    falsifying_indicator        an observation that would show the thesis is \
+wrong
+    spurious_correlation        a relationship treated as causal that may not be
+
+For each finding give:
+- statement: the objection, stated plainly
+- severity 0-10: how much damage it does to the thesis if it is right
+- rationale: why it holds
+- testable_with: the specific observation that would settle it, if there is \
+one. A critique nobody can settle is an opinion.
+- the supplied Claim ids it rests on, where it rests on evidence
+
+Then give falsification_risk 0-10 — how exposed the Process is overall — and \
+name the index of the single most damaging finding.
+
+Do not rescue the thesis. Do not explain why an objection is probably fine, do \
+not balance a finding against the strength of the case, and do not conclude \
+that the Process is sound. Another agent weighs what you find; your output is \
+the attack, not the judgement.\
+""",
+    )
+)

@@ -4,6 +4,8 @@ Every boundary between agents is a validated schema, which is what makes each
 boundary independently testable (agent doc §14). Agents never exchange prose.
 """
 
+from econiq_ontology import CritiqueKind
+
 from econiq_schemas.asset_agents import (
     AgentBoundaryViolation,
     AssetDiscoveryInput,
@@ -61,7 +63,6 @@ from econiq_schemas.event_agents import (
 from econiq_schemas.process_agents import (
     BeliefChange,
     Critique,
-    CritiqueKind,
     EventSummary,
     FeatureDelta,
     ProcessAffected,

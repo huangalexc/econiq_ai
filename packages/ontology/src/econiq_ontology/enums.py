@@ -178,6 +178,42 @@ class BottleneckKind(StrEnum):
     OTHER = "other"
 
 
+class CritiqueKind(StrEnum):
+    """The seven lines of attack the Process Critic must take (agent doc §6.5).
+
+    A closed vocabulary because the critic's coverage is measurable: an
+    adversarial pass that only ever finds "contradictory evidence" is not
+    attacking the thesis from seven directions.
+    """
+
+    UNSUPPORTED_ASSUMPTION = "unsupported_assumption"
+    MISSING_CAUSAL_LINK = "missing_causal_link"
+    CONTRADICTORY_EVIDENCE = "contradictory_evidence"
+    ALTERNATIVE_EXPLANATION = "alternative_explanation"
+    HISTORICAL_COUNTEREXAMPLE = "historical_counterexample"
+    FALSIFYING_INDICATOR = "falsifying_indicator"
+    SPURIOUS_CORRELATION = "spurious_correlation"
+
+
+class CritiqueStatus(StrEnum):
+    """What became of a critique.
+
+    Critiques are never deleted. A thesis that survived an attack is stronger
+    than one that was never attacked, and that is only visible if the attacks
+    remain on the record.
+    """
+
+    OPEN = "open"
+    ADDRESSED = "addressed"
+    """Later evidence answered it."""
+
+    DISMISSED = "dismissed"
+    """A human judged it not to apply."""
+
+    CONFIRMED = "confirmed"
+    """It turned out to be right — the thesis was damaged."""
+
+
 class AssetClass(StrEnum):
     """Ontology §14. V1 expresses theses through the underlying asset only —
     options and derivatives are explicitly out of scope."""

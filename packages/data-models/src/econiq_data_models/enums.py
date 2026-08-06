@@ -14,6 +14,8 @@ from econiq_ontology import (
     BottleneckKind,
     CausalRole,
     ClaimType,
+    CritiqueKind,
+    CritiqueStatus,
     DocumentType,
     EntityType,
     EpistemicStatus,
@@ -111,3 +113,5 @@ AGENT_RUN_STATUS = pg_enum(AgentRunStatus, "agent_run_status")
 EMBEDDING_KIND = pg_enum(EmbeddingKind, "embedding_kind")
 VALUE_BASIS = pg_enum(ValueBasis, "value_basis")
 JOURNAL_ENTRY_KIND = pg_enum(JournalEntryKind, "journal_entry_kind")
+CRITIQUE_KIND = pg_enum(CritiqueKind, "critique_kind")
+CRITIQUE_STATUS = pg_enum(CritiqueStatus, "critique_status")

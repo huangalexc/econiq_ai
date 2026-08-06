@@ -18,7 +18,7 @@ map.
 
 ## Status
 
-Phase 0 in progress — issues **#1–#9** of the 17-issue Phase 0 plan.
+Phase 0 in progress — issues **#1–#10** of the 17-issue Phase 0 plan.
 
 | Issue | Delivered |
 |---|---|
@@ -31,10 +31,11 @@ Phase 0 in progress — issues **#1–#9** of the 17-issue Phase 0 plan.
 | #7 Event resolution | clustering with pgvector candidate retrieval, computed source independence, and a deterministic propagation gate |
 | #8 Process discovery & update | persistent Processes accumulating evidence as revisions, with a journal and typed-edge enforcement |
 | #9 Archetype & State | classification, then State estimation constrained by the archetype's machine, with append-only State history |
+| #10 Process Critic | adversarial falsification with no route to rescue the thesis, stored as durable findings |
 
-Issues **#10–#17** (Critic, Bottleneck, Capability and Asset agents,
-orchestration, API, eval harness, end-to-end validation) are not started.
-Issue #17 is the phase gate.
+Issues **#11–#17** (Bottleneck, Capability and Asset agents, orchestration,
+API, eval harness, end-to-end validation) are not started. Issue #17 is the
+phase gate.
 
 ## Quick start
 
@@ -141,6 +142,16 @@ contract everything downstream depends on:
   graph (agent doc §23), so discovery creates them as `candidate` with
   `requires_review` set and journals the request. Phase 0 has no reviewer, and
   blocking on one nobody has assigned would just stop the pipeline.
+- **The critic has nowhere to defend the thesis.** `ProcessCriticOutput` has no
+  mitigations field and no verdict, and `NoRescueEvaluator` refuses a finding
+  that argues itself down. Adjudication happens downstream with the full
+  picture; the critic's output is the attack (agent doc §15).
+- **Critiques are superseded, never deleted.** A thesis that survived four
+  attacks is stronger than one never attacked, and that is only visible if the
+  attacks stay on the record.
+- **Independence is recorded, not claimed.** `LLMSettings.critic_model` points
+  the critic at a different model family when one exists; until then the run
+  records `prompt_only` rather than implying more.
 - **An illegal State transition is refused, not stored.** The schema rejects a
   State that does not belong to the Archetype; `StateTransitionEvaluator`
   rejects a move the machine does not permit from where the Process already

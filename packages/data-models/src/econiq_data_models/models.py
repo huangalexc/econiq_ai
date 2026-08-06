@@ -21,6 +21,8 @@ from econiq_ontology import (
     BottleneckKind,
     CausalRole,
     ClaimType,
+    CritiqueKind,
+    CritiqueStatus,
     DocumentType,
     EntityType,
     EpistemicStatus,
@@ -975,3 +977,39 @@ class JournalEntry(Base, ObservationMixin):
     agent_run_id: Mapped[uuid.UUID | None] = _run_fk()
 
     __table_args__ = (Index("ix_journal_entries_subject_time", "subject_id", "observed_at"),)
+
+
+class Critique(Base, ObservationMixin):
+    """An adversarial finding against a Process (agent doc §6.5).
+
+    Append-only and never deleted. A thesis that survived attack is stronger
+    than one that was never attacked, and that is only visible if the attacks
+    stay on the record — which is also what lets the evaluation harness measure
+    how many critiques turned out to be right (issue #57).
+
+    ``testable_with`` is the load-bearing field: a critique that names the
+    observation which would settle it becomes a monitoring condition later
+    (issue #32), while one that cannot be settled is only an opinion.
+    """
+
+    __tablename__ = "critiques"
+
+    critique_id: Mapped[uuid.UUID] = uuid_pk()
+    subject_id: Mapped[uuid.UUID] = _node_fk()
+    subject_type: Mapped[EntityType] = mapped_column(e.ENTITY_TYPE, nullable=False)
+    kind: Mapped[CritiqueKind] = mapped_column(e.CRITIQUE_KIND, nullable=False, index=True)
+    statement: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[float] = mapped_column(Float, nullable=False)
+    rationale: Mapped[str] = mapped_column(Text, nullable=False)
+    testable_with: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_most_damaging: Mapped[bool] = mapped_column(nullable=False, default=False)
+    status: Mapped[CritiqueStatus] = mapped_column(e.CRITIQUE_STATUS, nullable=False, index=True)
+    resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    supporting_claim_ids: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    agent_run_id: Mapped[uuid.UUID | None] = _run_fk()
+
+    __table_args__ = (
+        Index("ix_critiques_subject_status", "subject_id", "status", "observed_at"),
+        CheckConstraint("severity >= 0 AND severity <= 10", name="severity_range"),
+    )

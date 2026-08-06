@@ -13,6 +13,7 @@ from typing import Self
 
 from econiq_ontology import (
     Confidence,
+    CritiqueKind,
     ProcessArchetype,
     ProcessStateLabel,
     Score10,
@@ -272,18 +273,6 @@ class ProcessStateOutput(AgentOutput, Cited):
 # --------------------------------------------------------------------------- #
 # 6.5 Process Critic
 # --------------------------------------------------------------------------- #
-
-
-class CritiqueKind(StrEnum):
-    """The seven lines of attack §6.5 requires."""
-
-    UNSUPPORTED_ASSUMPTION = "unsupported_assumption"
-    MISSING_CAUSAL_LINK = "missing_causal_link"
-    CONTRADICTORY_EVIDENCE = "contradictory_evidence"
-    ALTERNATIVE_EXPLANATION = "alternative_explanation"
-    HISTORICAL_COUNTEREXAMPLE = "historical_counterexample"
-    FALSIFYING_INDICATOR = "falsifying_indicator"
-    SPURIOUS_CORRELATION = "spurious_correlation"
 
 
 class Critique(Cited):

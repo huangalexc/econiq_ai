@@ -43,6 +43,16 @@ class LLMSettings(BaseSettings):
     standard_model: str = "claude-sonnet-5"
     fast_model: str = "claude-haiku-4-5"
 
+    critic_model: str | None = Field(
+        default=None,
+        description=(
+            "Model for adversarial agents. Point this at a different family from "
+            "the reasoning model when one is available: independence is worth "
+            "more than re-querying the same model (agent doc §22). Falls back to "
+            "the reasoning model."
+        ),
+    )
+
     default_effort: str = Field(
         default="high",
         description="Reasoning depth hint. Raise for critique agents, lower for routing.",
@@ -54,6 +64,10 @@ class LLMSettings(BaseSettings):
         description="Total structured-output attempts, including repair retries.",
     )
     request_timeout_s: float = Field(default=600.0, gt=0)
+
+    @property
+    def resolved_critic_model(self) -> str:
+        return self.critic_model or self.reasoning_model
 
     def model_for(self, tier: ModelTier) -> str:
         return {

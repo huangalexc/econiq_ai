@@ -18,7 +18,7 @@ map.
 
 ## Status
 
-Phase 0 in progress — issues **#1–#8** of the 17-issue Phase 0 plan.
+Phase 0 in progress — issues **#1–#9** of the 17-issue Phase 0 plan.
 
 | Issue | Delivered |
 |---|---|
@@ -30,10 +30,11 @@ Phase 0 in progress — issues **#1–#8** of the 17-issue Phase 0 plan.
 | #6 Classifier & Claim extraction | `services/agents` — the first two agents, with quote grounding verified in code |
 | #7 Event resolution | clustering with pgvector candidate retrieval, computed source independence, and a deterministic propagation gate |
 | #8 Process discovery & update | persistent Processes accumulating evidence as revisions, with a journal and typed-edge enforcement |
+| #9 Archetype & State | classification, then State estimation constrained by the archetype's machine, with append-only State history |
 
-Issues **#9–#17** (Archetype/State, Critic, Bottleneck, Capability and Asset
-agents, orchestration, API, eval harness, end-to-end validation) are not
-started. Issue #17 is the phase gate.
+Issues **#10–#17** (Critic, Bottleneck, Capability and Asset agents,
+orchestration, API, eval harness, end-to-end validation) are not started.
+Issue #17 is the phase gate.
 
 ## Quick start
 
@@ -140,6 +141,18 @@ contract everything downstream depends on:
   graph (agent doc §23), so discovery creates them as `candidate` with
   `requires_review` set and journals the request. Phase 0 has no reviewer, and
   blocking on one nobody has assigned would just stop the pipeline.
+- **An illegal State transition is refused, not stored.** The schema rejects a
+  State that does not belong to the Archetype; `StateTransitionEvaluator`
+  rejects a move the machine does not permit from where the Process already
+  was. The agent run is kept as the record of what was proposed and why it was
+  refused.
+- **`basis` is assigned by code, not by the agent.** A feature the agent was
+  given a measurement for is `measured`; everything else is `estimated`. Letting
+  a model label its own guess as a measurement would erase the distinction
+  ontology §2.4 rests on.
+- **A State estimate is dated by its evidence, not by wall-clock time.** A State
+  inferred from evidence ending in July is a July observation; dating it today
+  would corrupt every point-in-time query that reads it.
 - **Corroboration does not write a revision.** An Event that changes no belief
   adds evidence and a journal entry only — otherwise "how often did this
   Process actually move?" becomes unanswerable.

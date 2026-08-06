@@ -228,3 +228,81 @@ Leave unaffected parts of the Process alone, and do not mention Assets.\
 """,
     )
 )
+
+
+PROCESS_ARCHETYPE_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="process_archetype",
+        version="1.0.0",
+        description="Classify a Process into an Archetype (agent doc §6.3).",
+        template="""\
+Classify this Economic Process into its primary Archetype.
+
+The Archetype determines which State model applies, which evidence matters, and \
+which historical analogs are comparable — so the classification is doing real \
+work, not labelling.
+
+    infrastructure_s_curve      adoption of a new capability spreads through an \
+economy, requiring buildout ahead of demand
+    commodity_supply_cycle      demand, supply, inventories, capacity and price \
+interact over a cycle in a tradable input
+    industrial_bottleneck       demand growth meets a capacity constraint whose \
+resolution needs time, capital or permitting
+    regulatory_implementation   a law, rule, mandate or programme moves from \
+enactment through rulemaking to enforcement
+    business_model_disruption   a change in technology, behaviour or regulation \
+alters the economics of an existing business model
+
+Return:
+- primary_archetype
+- secondary_archetypes: others that genuinely also apply. Many Processes are \
+mixed — an industrial bottleneck inside an S-curve buildout is common.
+- rejected: every archetype you ruled out, each with the reason. This is \
+required, and it is the point: stating why the other four are wrong is what \
+stops the classification drifting toward whichever archetype makes the nicest \
+story.
+- reasons: what the evidence shows about the underlying dynamic
+- confidence
+
+Classify the dynamic, not the subject matter. A mining company building a plant \
+is not automatically a commodity supply cycle. Do not choose an Archetype \
+because it creates an attractive investment narrative.\
+""",
+    )
+)
+
+
+PROCESS_STATE_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="process_state",
+        version="1.0.0",
+        description="Estimate a Process's lifecycle State (agent doc §6.4).",
+        template="""\
+Estimate where this Process currently sits in its lifecycle.
+
+You may only choose from the States listed as permitted for this Process's \
+Archetype. They are ordered developmentally; the Process is somewhere on that \
+sequence.
+
+Return:
+- categorical_state
+- state_confidence
+- features: the observable characteristics that place it there, each scored \
+0-10 with the reasoning. Where measured values are supplied below, interpret \
+them — do not restate them as your own estimate and do not invent a number for \
+something you were not given.
+- transition_beliefs: your belief that the Process moves next to each reachable \
+State. These are beliefs, not probabilities, and they need not sum to one.
+- transition_indicators: what would signal the next State is arriving
+- reversal_indicators: what would signal the Process is regressing
+
+Weigh evidence about the *stage* of the development, not its importance. A \
+large, well-funded Process still early in its buildout is in an early State. \
+Where the prior State is supplied, change it only when the evidence is about \
+the transition itself — a Process that stays put through a material Event is a \
+normal and informative outcome.
+
+Do not estimate returns, and do not mention Assets.\
+""",
+    )
+)

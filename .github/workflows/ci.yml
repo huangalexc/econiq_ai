@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_FROZEN: "1"
+
+jobs:
+  quality:
+    name: lint, type-check, unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras
+      - name: Lint
+        run: uv run ruff check .
+      - name: Format check
+        run: uv run ruff format --check .
+      - name: Type-check
+        run: uv run mypy packages
+      - name: Unit tests
+        run: uv run pytest -q -m "not integration"
+
+  integration:
+    name: migrations against Postgres
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: econiq
+          POSTGRES_PASSWORD: econiq
+          POSTGRES_DB: econiq
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U econiq -d econiq"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      ECONIQ_DB_URL: postgresql+psycopg://econiq:econiq@localhost:5432/econiq
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras
+      - name: Migration round-trip
+        run: uv run pytest -q -m integration
+
+  containers:
+    name: container builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      # Service images land with the first service (issue #5 onward). Until
+      # then this job proves the compose stack itself is well-formed rather
+      # than pretending to build images that do not exist.
+      - name: Validate compose stack
+        run: docker compose config --quiet

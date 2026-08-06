@@ -1,0 +1,117 @@
+# econiq
+
+An evidence-backed, **Process-first** investment research platform.
+
+```
+Documents → Claims → Events → Economic Processes → Process States
+→ Bottlenecks → Capabilities → Assets
+```
+
+Processes, not stocks, are the unit of research. An Asset is an investable
+projection of an upstream Process/Capability configuration, and the chain from
+document to asset stays explicit so every conclusion can be traced back to the
+evidence that produced it.
+
+The specifications in [`docs/`](docs/) are the source of truth;
+[`ENGINEERING_HANDOFF.md`](ENGINEERING_HANDOFF.md) is the phase plan and issue
+map.
+
+## Status
+
+Phase 0 foundation — issues **#1–#4** of the 17-issue Phase 0 plan.
+
+| Issue | Delivered |
+|---|---|
+| #1 Monorepo, CI, local dev | `uv` workspace, GitHub Actions, Docker Compose (Postgres+pgvector, MinIO, Redis) |
+| #2 Postgres system of record | 25 tables, temporal versioning, pgvector, Alembic |
+| #3 Pydantic ontology & schemas | `packages/ontology`, `packages/schemas` — the contract everything else depends on |
+| #4 LLM abstraction | `packages/llm` — providers, agent runtime, prompt versioning, cost tracking |
+
+Issues **#5–#17** (ingestion, the fourteen agents, orchestration, API, eval
+harness, end-to-end validation) are not started. Issue #17 is the phase gate.
+
+## Quick start
+
+```bash
+make install          # sync the workspace virtualenv (installs uv-managed Python)
+make up               # Postgres + MinIO + Redis
+make migrate          # apply the ontology schema
+make check            # lint, type-check, unit tests
+make test-integration # migration round-trip against the running database
+```
+
+If a local Postgres already owns port 5432:
+
+```bash
+export ECONIQ_POSTGRES_PORT=55432
+make up migrate
+```
+
+## Layout
+
+```
+apps/          web (Phase 1), api (#15)
+services/      ingestion, agents, quant, historical, alerts, graph
+packages/
+  ontology/    Pydantic ontology — Document…Asset, archetype State machines
+  schemas/     typed agent I/O contracts, one per agent
+  data-models/ SQLAlchemy models + Alembic migrations (the system of record)
+  llm/         provider abstraction, Agent base class, prompt versioning
+  scoring/     reusable score computation (#65)
+research/      notebooks and experiments
+infrastructure/ Terraform (#70)
+docs/          the specifications
+```
+
+## The constraints this code protects
+
+These recur throughout the specs and should be defended in review:
+
+1. **The LLM is never the source of truth** (tech rec §33). Postgres holds the
+   canonical ontology. Every agent output is validated against a Pydantic model
+   before it can become a row; `packages/llm` has no path that writes an
+   unvalidated object.
+2. **Point-in-time integrity is programmatic, not conventional** (ontology §33).
+   Every agent input carries an `as_of` cut-off; every observation records both
+   `observed_at` and `recorded_at`.
+3. **Every material statement has provenance** (agent doc §2.4, §21). Every
+   agent-written row references the `agent_run` that produced it, which
+   references the prompt version, its content hash, and the model.
+4. **Agents are narrow, typed and bounded** (agent doc §2.1, §14). Each stops at
+   its ontology layer — the Bottleneck agent never names a ticker — and typed
+   edges make skipping a layer a validation error.
+5. **Nothing is destroyed** (PRD §21, §30). Revisable entities are append-only
+   revisions with a single-current-revision index; observations are append-only
+   by nature.
+6. **Uncertainty language is earned** (ontology §35). Confidence values are model
+   belief, not probability, until the calibration framework (#55) validates them
+   — which is why State transitions are stored as `transition_beliefs`.
+7. **Thesis quality ≠ Asset quality ≠ Trade quality** (ontology §17). Enforced
+   structurally: a scorecard carries one family and may only use that family's
+   dimensions.
+
+## Decisions worth a second opinion
+
+Recorded here rather than buried in commit messages, because #2 and #3 are the
+contract everything downstream depends on:
+
+- **Two archetype State machines are proposals, not spec.** Ontology §8.3 and
+  §8.5 give examples but no State sequence for Industrial Bottleneck and
+  Business Model Disruption. The sequences in `econiq_ontology.archetypes` are
+  derived from the descriptions and flagged in `UNSPECIFIED_IN_SOURCE`.
+- **`transition_probabilities` is named `transition_beliefs`.** Ontology §10 uses
+  the former; §35 and agent doc §2.5 forbid probability language until
+  calibration. The rename is reversible when #55 lands.
+- **Node-type integrity is enforced in the application, not the database.**
+  Edges are foreign keys into a `nodes` registry, so they cannot dangle — but
+  "this column may only reference a Process" would need the type denormalised
+  into every child table.
+- **Recursive schemas bypass provider-side structured output.** The Capability
+  requirement tree is recursive, which providers reject; those calls fall back
+  to an inline schema in the prompt plus local validation and repair.
+- **`asset_states` uses JSONB for its five dimension groups.** The contract is
+  pinned in `econiq_ontology.asset_layer`; committing to columns before a Phase 3
+  data vendor is chosen would be guessing.
+- **Only the Anthropic provider is implemented.** The abstraction is
+  provider-neutral and `ScriptedProvider` makes every agent testable offline;
+  OpenAI/Google/local are a class implementing `LLMProvider` away.

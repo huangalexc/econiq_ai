@@ -1,0 +1,22 @@
+[project]
+name = "econiq-data-models"
+version = "0.1.0"
+description = "PostgreSQL system of record: SQLAlchemy models and Alembic migrations"
+requires-python = ">=3.12"
+dependencies = [
+    "SQLAlchemy>=2.0.35",
+    "alembic>=1.13",
+    "pgvector>=0.3",
+    "psycopg[binary]>=3.2",
+    "econiq-ontology",
+]
+
+[tool.uv.sources]
+econiq-ontology = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/econiq_data_models"]

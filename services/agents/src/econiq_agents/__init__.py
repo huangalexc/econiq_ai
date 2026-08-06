@@ -5,6 +5,29 @@ stopping at their ontology layer. Everything they produce carries the agent run
 that produced it.
 """
 
+from econiq_agents.capability_agents import (
+    BindingClarityEvaluator,
+    BottleneckIdentificationAgent,
+    CapabilityConfluenceAgent,
+    CapabilityMappingAgent,
+    ConfluenceScopeEvaluator,
+    RequirementStructureEvaluator,
+    independent_support,
+)
+from econiq_agents.capability_persistence import (
+    BottleneckWriter,
+    CapabilityWriter,
+    PersistedBottleneck,
+    PersistedRequirement,
+    ResolvedCapability,
+    requirement_summary,
+    slugify,
+)
+from econiq_agents.capability_stage import (
+    CapabilityOutcome,
+    CapabilityStage,
+    ConfluenceResult,
+)
 from econiq_agents.clustering_metrics import (
     ClusteringMetrics,
     clusters_from_pairs,
@@ -69,6 +92,9 @@ from econiq_agents.process_agents import (
 from econiq_agents.process_persistence import AppliedUpdate, PersistedProcess, ProcessWriter
 from econiq_agents.process_stage import ProcessDiscoveryStage, ProcessOutcome
 from econiq_agents.prompts import (
+    BOTTLENECK_IDENTIFICATION_V1,
+    CAPABILITY_CONFLUENCE_V1,
+    CAPABILITY_MAPPING_V1,
     CLAIM_EXTRACTION_V1,
     DOCUMENT_CLASSIFIER_V1,
     EVENT_RESOLUTION_V1,
@@ -91,6 +117,9 @@ from econiq_agents.state_persistence import AppliedArchetype, RecordedState, Sta
 from econiq_agents.state_stage import ProcessStateStage, StateOutcome
 
 __all__ = [
+    "BOTTLENECK_IDENTIFICATION_V1",
+    "CAPABILITY_CONFLUENCE_V1",
+    "CAPABILITY_MAPPING_V1",
     "CLAIM_EXTRACTION_V1",
     "DOCUMENT_CLASSIFIER_V1",
     "EVENT_RESOLUTION_V1",
@@ -102,10 +131,20 @@ __all__ = [
     "AgentRunRecorder",
     "AppliedArchetype",
     "AppliedUpdate",
+    "BindingClarityEvaluator",
+    "BottleneckIdentificationAgent",
+    "BottleneckWriter",
+    "CapabilityConfluenceAgent",
+    "CapabilityMappingAgent",
+    "CapabilityOutcome",
+    "CapabilityStage",
+    "CapabilityWriter",
     "ClaimExtractionAgent",
     "ClaimPersistResult",
     "ClaimWriter",
     "ClusteringMetrics",
+    "ConfluenceResult",
+    "ConfluenceScopeEvaluator",
     "CoverageReport",
     "CritiqueOutcome",
     "DocumentClassifierAgent",
@@ -127,8 +166,10 @@ __all__ = [
     "MeasuredFeatureEvaluator",
     "MostDamagingEvaluator",
     "NoRescueEvaluator",
+    "PersistedBottleneck",
     "PersistedEvent",
     "PersistedProcess",
+    "PersistedRequirement",
     "ProcessArchetypeAgent",
     "ProcessCriticAgent",
     "ProcessCritiqueStage",
@@ -143,6 +184,8 @@ __all__ = [
     "PropagationPolicy",
     "QuoteGroundingEvaluator",
     "RecordedState",
+    "RequirementStructureEvaluator",
+    "ResolvedCapability",
     "ResolvedEvent",
     "ResolvedSpan",
     "ScorecardWriter",
@@ -161,8 +204,11 @@ __all__ = [
     "coverage_of",
     "duplicate_suppression_rate",
     "evaluate_clustering",
+    "independent_support",
     "jaccard",
     "normalize_for_matching",
+    "requirement_summary",
     "resolve_span",
     "shingles",
+    "slugify",
 ]

@@ -356,3 +356,120 @@ the attack, not the judgement.\
 """,
     )
 )
+
+
+BOTTLENECK_IDENTIFICATION_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="bottleneck_identification",
+        version="1.0.0",
+        description="Identify what constrains a Process (agent doc §7.1).",
+        template="""\
+Identify what currently constrains further progression of this Economic Process.
+
+A Bottleneck is a specific constraint on the Process scaling, not a risk to it \
+and not a general difficulty. "Permitting timelines for high-voltage \
+transmission" is a Bottleneck; "regulatory uncertainty" is not.
+
+Consider physical constraints, production capacity, processing capacity, \
+capital, permitting, labour and skills, specialised inputs, infrastructure, \
+technology and regulation.
+
+For each candidate give:
+- name and description of the constraint itself
+- kind
+- why_limiting: the mechanism by which it caps the Process
+- currently_binding: whether it constrains the Process *now*, or would only \
+constrain it later. This distinction matters more than any other here — a \
+constraint that binds in three years is a different object from one binding \
+today, and treating them alike is how a research system talks itself into \
+positions years early.
+- demand_pressure, supply_elasticity, time_to_expand, current_constraint: \
+score 0-10 where the evidence supports a score, and leave out what it does not
+- relief_indicators: observations that would show the constraint has been \
+relieved
+- confidence and the supplied Claim ids the judgement rests on
+
+Then name which candidate you judge to be currently binding, if any.
+
+Identify the constraint, not who profits from it. Do not name companies, \
+tickers or investments, and do not propose the Capabilities that would resolve \
+it — that is a separate step.\
+""",
+    )
+)
+
+
+CAPABILITY_MAPPING_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="capability_mapping",
+        version="1.0.0",
+        description="Translate a Bottleneck into required Capabilities (agent doc §7.2).",
+        template="""\
+Translate this Bottleneck into the minimum set of economic Capabilities \
+required to resolve it.
+
+A Capability is a concrete economic ability — "heavy rare-earth separation", \
+"grid interconnection engineering", "advanced packaging" — not a company, an \
+industry, or a goal.
+
+For each Capability give a short slug-style ref, a name, a description, and its \
+role:
+    necessary        the Bottleneck cannot be resolved without it
+    sufficient       it alone resolves the Bottleneck
+    complementary    it materially helps but is not required
+    substitute       it is an alternative route to the same resolution
+
+Then express how they combine, as a tree of AND and OR groups over those refs, \
+marking any that are optional. The logical structure is the point and is not \
+decoration: "domestic production AND mineral processing" and "domestic \
+production OR mineral processing" imply completely different sets of \
+participants, and collapsing them into a flat list destroys the distinction. \
+Every Capability you propose must appear in the tree, and the tree may only \
+reference Capabilities you proposed.
+
+Where the list of existing Capabilities below already contains what you mean, \
+reuse that exact name rather than coining a new one. Several Processes \
+converging on one Capability is a meaningful signal, and it only becomes \
+visible if the same Capability is named the same way.
+
+Do not identify companies, tickers or investable assets. Do not list every \
+capability in the value chain — the minimum set that resolves this Bottleneck.\
+""",
+    )
+)
+
+
+CAPABILITY_CONFLUENCE_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="capability_confluence",
+        version="1.0.0",
+        description="Classify the independence of a Capability's upstream Processes (§7.3).",
+        template="""\
+For this Capability, assess the Processes that require it.
+
+A Capability required by several genuinely independent Processes is a stronger \
+signal than one required by several facets of the same development. Your job is \
+to tell those apart.
+
+For each upstream Process give:
+- independence:
+    independent   it would require this Capability even if the others did not \
+exist
+    correlated    it shares a driver with another Process here, so the support \
+partly double-counts
+    redundant     it is substantially the same development as another, named \
+differently
+- support_strength 0-10: how strongly this Process drives demand for the \
+Capability
+- rationale
+
+Then note any pairs of these Processes that reinforce each other, and any that \
+interfere — where one advancing makes the other less likely.
+
+Do not count multiple facets of one development as independent support. Do not \
+name companies or assets. Do not conclude anything about attractiveness; you \
+are classifying structure, and how many independent supporters there are is \
+counted from your classification rather than asserted by you.\
+""",
+    )
+)

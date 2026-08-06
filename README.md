@@ -18,7 +18,7 @@ map.
 
 ## Status
 
-Phase 0 in progress — issues **#1–#10** of the 17-issue Phase 0 plan.
+Phase 0 in progress — issues **#1–#11** of the 17-issue Phase 0 plan.
 
 | Issue | Delivered |
 |---|---|
@@ -32,10 +32,10 @@ Phase 0 in progress — issues **#1–#10** of the 17-issue Phase 0 plan.
 | #8 Process discovery & update | persistent Processes accumulating evidence as revisions, with a journal and typed-edge enforcement |
 | #9 Archetype & State | classification, then State estimation constrained by the archetype's machine, with append-only State history |
 | #10 Process Critic | adversarial falsification with no route to rescue the thesis, stored as durable findings |
+| #11 Bottleneck & Capability | binding constraints, AND/OR/optional requirement trees that round-trip through Postgres, shared Capability nodes |
 
-Issues **#11–#17** (Bottleneck, Capability and Asset agents, orchestration,
-API, eval harness, end-to-end validation) are not started. Issue #17 is the
-phase gate.
+Issues **#12–#17** (Asset discovery, graph traversal, orchestration, API, eval
+harness, end-to-end validation) are not started. Issue #17 is the phase gate.
 
 ## Quick start
 
@@ -142,6 +142,17 @@ contract everything downstream depends on:
   graph (agent doc §23), so discovery creates them as `candidate` with
   `requires_review` set and journals the request. Phase 0 has no reviewer, and
   blocking on one nobody has assigned would just stop the pipeline.
+- **Only the binding Bottleneck is mapped.** Mapping a constraint that will
+  not bite for three years produces a Capability set — and eventually an Asset
+  universe — for a problem nobody has yet.
+- **Capabilities are shared nodes, resolved by slug then by vector.** Creating
+  "heavy rare-earth separation" afresh for every Process that needs it would
+  destroy ontology §13's confluence signal through a naming accident. The
+  match threshold is deliberately tight: a near-duplicate is cheaper than a
+  wrong merge, which fuses two Bottlenecks' Asset universes.
+- **The requirement tree is stored as a tree.** `requirement_nodes` rebuild
+  into the ontology's own `CapabilityRequirement`, so `is_satisfied_by` and
+  `coverage` answer identically against Postgres and against the model.
 - **The critic has nowhere to defend the thesis.** `ProcessCriticOutput` has no
   mitigations field and no verdict, and `NoRescueEvaluator` refuses a finding
   that argues itself down. Adjudication happens downstream with the full

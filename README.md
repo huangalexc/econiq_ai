@@ -18,7 +18,7 @@ map.
 
 ## Status
 
-Phase 0 in progress — issues **#1–#6** of the 17-issue Phase 0 plan.
+Phase 0 in progress — issues **#1–#7** of the 17-issue Phase 0 plan.
 
 | Issue | Delivered |
 |---|---|
@@ -28,8 +28,9 @@ Phase 0 in progress — issues **#1–#6** of the 17-issue Phase 0 plan.
 | #4 LLM abstraction | `packages/llm` — providers, agent runtime, prompt versioning, cost tracking |
 | #5 Document ingestion | `services/ingestion` — S3/MinIO storage, parsing to sections, idempotent ingest, `DocumentIngested` |
 | #6 Classifier & Claim extraction | `services/agents` — the first two agents, with quote grounding verified in code |
+| #7 Event resolution | clustering with pgvector candidate retrieval, computed source independence, and a deterministic propagation gate |
 
-Issues **#7–#17** (event resolution, the remaining twelve agents,
+Issues **#8–#17** (the Process, Bottleneck, Capability and Asset agents,
 orchestration, API, eval harness, end-to-end validation) are not started.
 Issue #17 is the phase gate.
 
@@ -123,6 +124,18 @@ contract everything downstream depends on:
   what it cannot find; the rejection rate is the extraction hallucination
   metric issue #6 asks for. The alternative — storing the model's own guessed
   offsets — makes the provenance inspector confidently wrong.
+- **The model never sets its own propagation bar.** The significance agent
+  scores an Event; `PropagationPolicy` — thresholds in code, tunable against
+  the eval corpus — decides whether it reaches the Process layer. A trigger bar
+  that drifts with prompt wording is one nobody can reason about.
+- **Independent source count is computed, not reported.** The resolution agent
+  names publishers; `assess_independence` collapses same-publisher pieces and
+  syndicated reprints (token-shingle overlap) and returns what is actually
+  behind a cluster. Twenty outlets carrying one wire story score 1.
+- **The default embedder is lexical, not semantic.** `HashingEmbedder` is
+  deterministic and dependency-free so retrieval, tests and offline development
+  work without a vendor; a semantic provider plugs in behind `Embedder`. It
+  narrows candidates only — it never decides a merge.
 - **Quantitative documents are not sent to Claim extraction.** The classifier
   routes them to the (not yet built) deterministic ETL service, because
   reconstructing figures from prose with an LLM is what tech rec §20 forbids.

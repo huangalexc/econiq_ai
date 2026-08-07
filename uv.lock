@@ -11,6 +11,7 @@ members = [
     "econiq-agents",
     "econiq-ai",
     "econiq-data-models",
+    "econiq-graph",
     "econiq-ingestion",
     "econiq-llm",
     "econiq-ontology",
@@ -327,6 +328,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "econiq-agents" },
     { name = "econiq-data-models" },
+    { name = "econiq-graph" },
     { name = "econiq-ingestion" },
     { name = "econiq-llm" },
     { name = "econiq-ontology" },
@@ -346,6 +348,7 @@ dev = [
 requires-dist = [
     { name = "econiq-agents", editable = "services/agents" },
     { name = "econiq-data-models", editable = "packages/data-models" },
+    { name = "econiq-graph", editable = "services/graph" },
     { name = "econiq-ingestion", editable = "services/ingestion" },
     { name = "econiq-llm", editable = "packages/llm" },
     { name = "econiq-ontology", editable = "packages/ontology" },
@@ -380,6 +383,21 @@ requires-dist = [
     { name = "pgvector", specifier = ">=0.3" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.35" },
+]
+
+[[package]]
+name = "econiq-graph"
+version = "0.1.0"
+source = { editable = "services/graph" }
+dependencies = [
+    { name = "econiq-data-models" },
+    { name = "econiq-ontology" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "econiq-data-models", editable = "packages/data-models" },
+    { name = "econiq-ontology", editable = "packages/ontology" },
 ]
 
 [[package]]

@@ -1,0 +1,16 @@
+[project]
+name = "econiq-schemas"
+version = "0.1.0"
+description = "Typed agent I/O contracts for the econiq research platform"
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.9", "econiq-ontology"]
+
+[tool.uv.sources]
+econiq-ontology = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/econiq_schemas"]

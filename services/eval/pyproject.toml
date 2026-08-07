@@ -1,0 +1,35 @@
+[project]
+name = "econiq-eval"
+version = "0.1.0"
+description = "Evaluation harness: benchmarks, fault injection and provenance audits"
+requires-python = ">=3.12"
+dependencies = [
+    "econiq-ontology",
+    "econiq-schemas",
+    "econiq-data-models",
+    "econiq-llm",
+    "econiq-graph",
+    "econiq-agents",
+    "econiq-ingestion",
+    "econiq-orchestration",
+]
+
+[project.scripts]
+econiq-eval = "econiq_eval.cli:main"
+
+[tool.uv.sources]
+econiq-ontology = { workspace = true }
+econiq-schemas = { workspace = true }
+econiq-data-models = { workspace = true }
+econiq-llm = { workspace = true }
+econiq-graph = { workspace = true }
+econiq-agents = { workspace = true }
+econiq-ingestion = { workspace = true }
+econiq-orchestration = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/econiq_eval"]

@@ -1,0 +1,64 @@
+# Local development stack (issue #1).
+#
+# Mirrors the managed services the deployment target uses (tech rec §29): RDS
+# Postgres with pgvector, S3, ElastiCache Redis. Same interfaces locally, so
+# code written against the compose stack runs unchanged in AWS.
+name: econiq
+
+services:
+  postgres:
+    # pgvector is not optional: event deduplication, analog retrieval and
+    # semantic search all depend on it (tech rec §7).
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: econiq
+      POSTGRES_PASSWORD: econiq
+      POSTGRES_DB: econiq
+    ports:
+      # Override when a local Postgres already owns 5432:
+      #   ECONIQ_POSTGRES_PORT=55432 docker compose up -d
+      - "${ECONIQ_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U econiq -d econiq"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    # S3-compatible object storage for raw documents. Postgres holds the
+    # metadata and the reference; the bytes live here (tech rec §8).
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: econiq
+      MINIO_ROOT_PASSWORD: econiq-dev-secret
+    ports:
+      - "${ECONIQ_MINIO_PORT:-9000}:9000"
+      - "${ECONIQ_MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${ECONIQ_REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres_data:
+  minio_data:
+  redis_data:

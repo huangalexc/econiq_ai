@@ -18,7 +18,9 @@ map.
 
 ## Status
 
-Phase 0 in progress — issues **#1–#15** of the 17-issue Phase 0 plan.
+Phase 0 complete — issues **#1–#17**. The gate (#17) reports **9 of 10 in-scope
+PRD §28 criteria met**; see [docs/phase-0-validation.md](docs/phase-0-validation.md)
+for the tenth and issue #73 for its resolution.
 
 | Issue | Delivered |
 |---|---|
@@ -37,11 +39,18 @@ Phase 0 in progress — issues **#1–#15** of the 17-issue Phase 0 plan.
 | #13 Graph traversal & integrity | cycle-safe point-in-time traversal in Postgres, plus the structural checks Postgres cannot express |
 | #14 Staged orchestration | transactional outbox, Postgres work queue, and a reconciler that makes a dropped event a latency problem |
 | #15 Domain API | `apps/api` — 25 read endpoints, every one accepting `as_of`; no route can write an ontology row |
+| #16 Eval harness | `services/eval` — benchmarks, point-in-time and provenance audits, and fault injection that proves the audits fire |
+| #17 End-to-end validation | a corpus run from document to instrument, graded against PRD §28 |
 
-Issues **#16–#17** (eval harness, end-to-end validation) are not started.
-Issue #17 is the phase gate. The full chain — document to instrument — now runs
-as a staged, triggered pipeline rather than a synchronous cascade, and is
-readable over HTTP at any point in its history.
+The full chain — document to instrument — runs as a staged, triggered pipeline,
+is readable over HTTP at any point in its history, and is measured by a harness
+that injects known faults to check its own integrity checks still fire.
+
+One gap the gate surfaced rather than smoothed over: nothing in Phase 0 writes an
+`asset_quality` scorecard, so PRD §28.7 ("quantitatively compare Assets") is
+unmet. The Asset Quant and Asset Quality agents (agent doc §8.3–8.4) are in
+neither Phase 0's nor Phase 1's issue list — a scope gap between the PRD and
+`phases.txt`, tracked in #73.
 
 ## Quick start
 

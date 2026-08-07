@@ -12,6 +12,7 @@ members = [
     "econiq-ai",
     "econiq-api",
     "econiq-data-models",
+    "econiq-eval",
     "econiq-graph",
     "econiq-ingestion",
     "econiq-llm",
@@ -352,6 +353,7 @@ dependencies = [
     { name = "econiq-agents" },
     { name = "econiq-api" },
     { name = "econiq-data-models" },
+    { name = "econiq-eval" },
     { name = "econiq-graph" },
     { name = "econiq-ingestion" },
     { name = "econiq-llm" },
@@ -375,6 +377,7 @@ requires-dist = [
     { name = "econiq-agents", editable = "services/agents" },
     { name = "econiq-api", editable = "apps/api" },
     { name = "econiq-data-models", editable = "packages/data-models" },
+    { name = "econiq-eval", editable = "services/eval" },
     { name = "econiq-graph", editable = "services/graph" },
     { name = "econiq-ingestion", editable = "services/ingestion" },
     { name = "econiq-llm", editable = "packages/llm" },
@@ -435,6 +438,33 @@ requires-dist = [
     { name = "pgvector", specifier = ">=0.3" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.35" },
+]
+
+[[package]]
+name = "econiq-eval"
+version = "0.1.0"
+source = { editable = "services/eval" }
+dependencies = [
+    { name = "econiq-agents" },
+    { name = "econiq-data-models" },
+    { name = "econiq-graph" },
+    { name = "econiq-ingestion" },
+    { name = "econiq-llm" },
+    { name = "econiq-ontology" },
+    { name = "econiq-orchestration" },
+    { name = "econiq-schemas" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "econiq-agents", editable = "services/agents" },
+    { name = "econiq-data-models", editable = "packages/data-models" },
+    { name = "econiq-graph", editable = "services/graph" },
+    { name = "econiq-ingestion", editable = "services/ingestion" },
+    { name = "econiq-llm", editable = "packages/llm" },
+    { name = "econiq-ontology", editable = "packages/ontology" },
+    { name = "econiq-orchestration", editable = "services/orchestration" },
+    { name = "econiq-schemas", editable = "packages/schemas" },
 ]
 
 [[package]]

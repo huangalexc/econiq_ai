@@ -12,6 +12,7 @@ dependencies = [
     "econiq-agents",
     "econiq-graph",
     "econiq-orchestration",
+    "econiq-eval",
     "econiq-api",
 ]
 
@@ -38,6 +39,7 @@ members = [
     "services/agents",
     "services/graph",
     "services/orchestration",
+    "services/eval",
     "apps/api",
 ]
 
@@ -50,6 +52,7 @@ econiq-ingestion = { workspace = true }
 econiq-agents = { workspace = true }
 econiq-graph = { workspace = true }
 econiq-orchestration = { workspace = true }
+econiq-eval = { workspace = true }
 econiq-api = { workspace = true }
 
 [tool.ruff]
@@ -92,6 +95,7 @@ mypy_path = [
     "services/agents/src",
     "services/graph/src",
     "services/orchestration/src",
+    "services/eval/src",
     "apps/api/src",
 ]
 explicit_package_bases = true
@@ -106,7 +110,7 @@ module = ["anthropic.*", "pgvector.*", "boto3.*", "botocore.*", "trafilatura.*",
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["packages", "services"]
+testpaths = ["packages", "services", "apps"]
 # Several packages have a tests/conftest.py; importlib mode keeps their module
 # names distinct without scattering __init__.py files through the test trees.
 addopts = "--import-mode=importlib"

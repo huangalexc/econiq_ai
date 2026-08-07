@@ -18,7 +18,7 @@ map.
 
 ## Status
 
-Phase 0 in progress — issues **#1–#14** of the 17-issue Phase 0 plan.
+Phase 0 in progress — issues **#1–#15** of the 17-issue Phase 0 plan.
 
 | Issue | Delivered |
 |---|---|
@@ -36,10 +36,12 @@ Phase 0 in progress — issues **#1–#14** of the 17-issue Phase 0 plan.
 | #12 Asset discovery & exposure | equities, commodities, currencies and indices; deterministic resolution; append-only exposure observations |
 | #13 Graph traversal & integrity | cycle-safe point-in-time traversal in Postgres, plus the structural checks Postgres cannot express |
 | #14 Staged orchestration | transactional outbox, Postgres work queue, and a reconciler that makes a dropped event a latency problem |
+| #15 Domain API | `apps/api` — 25 read endpoints, every one accepting `as_of`; no route can write an ontology row |
 
-Issues **#15–#17** (API, eval harness, end-to-end validation) are not started.
+Issues **#16–#17** (eval harness, end-to-end validation) are not started.
 Issue #17 is the phase gate. The full chain — document to instrument — now runs
-as a staged, triggered pipeline rather than a synchronous cascade.
+as a staged, triggered pipeline rather than a synchronous cascade, and is
+readable over HTTP at any point in its history.
 
 ## Quick start
 

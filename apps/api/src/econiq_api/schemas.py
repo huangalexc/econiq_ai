@@ -1,0 +1,500 @@
+"""Response models.
+
+These are API-shaped views, not the ontology models themselves — the ontology
+carries validators and defaults that are about *producing* an object, and a
+response only needs to describe one. But every enum and every vocabulary comes
+from ``econiq_ontology``, so the API cannot drift from the contract without a
+type error.
+
+One rule shows up repeatedly below: a derived number is never returned without
+the means to explain it. A score carries its dimensions and their inputs; a
+State carries its features and their basis; an Asset carries the chain that
+found it. The UI's [Explain] primitive (issue #25) is only possible if the API
+never strips that.
+"""
+
+from __future__ import annotations
+
+import uuid
+from datetime import datetime
+from typing import Any
+
+from econiq_ontology import (
+    AssetClass,
+    BottleneckKind,
+    CritiqueKind,
+    CritiqueStatus,
+    EntityType,
+    EventType,
+    ExposureKind,
+    LogicOperator,
+    Necessity,
+    ProcessArchetype,
+    ProcessStateLabel,
+    ProcessStatus,
+    RelationshipType,
+    ScoreFamily,
+)
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class ApiModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
+
+
+class PageMeta(ApiModel):
+    limit: int
+    offset: int
+    returned: int
+    total: int | None = Field(
+        default=None, description="Omitted where counting would be more expensive than the page."
+    )
+
+
+class NodeRef(ApiModel):
+    """A pointer to any node, with enough to render it."""
+
+    id: uuid.UUID
+    type: EntityType
+    label: str
+    slug: str | None = None
+
+
+# --------------------------------------------------------------------------- #
+# Processes
+# --------------------------------------------------------------------------- #
+
+
+class ProcessSummaryOut(ApiModel):
+    id: uuid.UUID
+    name: str
+    slug: str
+    description: str
+    archetype: ProcessArchetype | None
+    archetype_confidence: float | None
+    status: ProcessStatus
+    requires_review: bool
+    revision: int
+    current_state: ProcessStateLabel | None = None
+    state_confidence: float | None = None
+    state_observed_at: datetime | None = None
+
+
+class StateFeatureOut(ApiModel):
+    name: str
+    value: float
+    basis: str = Field(
+        description="'measured' or 'estimated' — whether code computed it or an agent judged it."
+    )
+    rationale: str | None = None
+
+
+class ProcessStateOut(ApiModel):
+    id: uuid.UUID
+    archetype: ProcessArchetype
+    categorical_state: ProcessStateLabel
+    state_confidence: float
+    observed_at: datetime
+    recorded_at: datetime
+    features: list[StateFeatureOut] = Field(default_factory=list)
+    transition_beliefs: dict[str, float] = Field(
+        default_factory=dict,
+        description=(
+            "Model belief that the Process moves next to each State. Not "
+            "probabilities: uncalibrated until the calibration framework validates "
+            "them (ontology §35)."
+        ),
+    )
+    transition_indicators: list[str] = Field(default_factory=list)
+    reversal_indicators: list[str] = Field(default_factory=list)
+
+
+class JournalEntryOut(ApiModel):
+    """Why the system changed its mind (PRD §21)."""
+
+    id: uuid.UUID
+    kind: str
+    summary: str
+    observed_at: datetime
+    confidence_before: float | None
+    confidence_after: float | None
+    changes: list[dict[str, Any]] = Field(default_factory=list)
+    triggering_event_id: uuid.UUID | None = None
+
+
+class CritiqueOut(ApiModel):
+    id: uuid.UUID
+    kind: CritiqueKind
+    statement: str
+    severity: float
+    rationale: str
+    testable_with: str | None
+    is_most_damaging: bool
+    status: CritiqueStatus
+    observed_at: datetime
+
+    @classmethod
+    def from_row(cls, row: Any) -> CritiqueOut:
+        # Built explicitly rather than by attribute matching: the ORM primary
+        # key is `critique_id` and silently returning nothing for `id` would be
+        # a worse failure than a mapping that has to be maintained.
+        return cls(
+            id=row.critique_id,
+            kind=row.kind,
+            statement=row.statement,
+            severity=row.severity,
+            rationale=row.rationale,
+            testable_with=row.testable_with,
+            is_most_damaging=row.is_most_damaging,
+            status=row.status,
+            observed_at=row.observed_at,
+        )
+
+
+class ProcessDetailOut(ProcessSummaryOut):
+    state: ProcessStateOut | None = None
+    open_bottlenecks: list[BottleneckOut] = Field(default_factory=list)
+    open_critiques: list[CritiqueOut] = Field(default_factory=list)
+    evidence_event_count: int = 0
+    contradicting_event_count: int = 0
+
+
+# --------------------------------------------------------------------------- #
+# Events and evidence
+# --------------------------------------------------------------------------- #
+
+
+class EventOut(ApiModel):
+    id: uuid.UUID
+    event_type: EventType
+    title: str
+    description: str
+    occurred_at: datetime
+    independent_source_count: int = Field(
+        description=(
+            "Distinct reports behind this Event after syndication collapse — not "
+            "the document count (ontology §47)."
+        )
+    )
+    novelty: float
+    materiality: float
+    confidence: float
+    contradictions: list[str] = Field(default_factory=list)
+    propagated_at: datetime | None = Field(
+        default=None,
+        description="When this Event cleared the significance gate. Null means it is accumulating.",
+    )
+    revision: int
+
+
+class ClaimOut(ApiModel):
+    id: uuid.UUID
+    document_id: uuid.UUID
+    text: str
+    claim_type: str
+    assertion_source: str | None
+    attributed_to: str | None
+    extraction_confidence: float
+    source_location: dict[str, Any] = Field(
+        description="Verified span: the quote and its offsets in the parsed document."
+    )
+
+
+class DocumentOut(ApiModel):
+    id: uuid.UUID
+    source: str
+    publisher: str | None
+    title: str
+    url: str | None
+    document_type: str
+    publication_time: datetime
+    storage_uri: str | None
+
+
+class EventDetailOut(EventOut):
+    claims: list[ClaimOut] = Field(default_factory=list)
+    documents: list[DocumentOut] = Field(default_factory=list)
+
+
+class EvidenceTrailOut(ApiModel):
+    """A statement traced to the documents behind it (agent doc §2.4)."""
+
+    subject: NodeRef
+    supporting_events: list[NodeRef] = Field(default_factory=list)
+    contradicting_events: list[NodeRef] = Field(default_factory=list)
+    claim_ids: list[uuid.UUID] = Field(default_factory=list)
+    document_ids: list[uuid.UUID] = Field(default_factory=list)
+    is_evidenced: bool
+
+
+# --------------------------------------------------------------------------- #
+# Bottlenecks and capabilities
+# --------------------------------------------------------------------------- #
+
+
+class BottleneckOut(ApiModel):
+    id: uuid.UUID
+    process_id: uuid.UUID
+    name: str
+    description: str
+    kind: BottleneckKind
+    currently_binding: bool = Field(
+        description="Whether it constrains the Process now, or would only later."
+    )
+    demand_pressure: float | None
+    supply_elasticity: float | None
+    time_to_expand: float | None
+    current_constraint: float | None
+    relief_indicators: list[str] = Field(default_factory=list)
+    confidence: float
+    resolved: bool
+
+    @classmethod
+    def from_row(cls, row: Any) -> BottleneckOut:
+        return cls(
+            id=row.bottleneck_id,
+            process_id=row.process_id,
+            name=row.name,
+            description=row.description,
+            kind=row.kind,
+            currently_binding=row.currently_binding,
+            demand_pressure=row.demand_pressure,
+            supply_elasticity=row.supply_elasticity,
+            time_to_expand=row.time_to_expand,
+            current_constraint=row.current_constraint,
+            relief_indicators=list(row.relief_indicators),
+            confidence=row.confidence,
+            resolved=row.resolved,
+        )
+
+
+class RequirementNodeOut(ApiModel):
+    """One node of a requirement tree.
+
+    Returned as a tree rather than a flat list because AND and OR imply
+    completely different sets of participants (ontology §12), and flattening for
+    transport would discard the distinction the mapping agent was asked for.
+    """
+
+    kind: str
+    operator: LogicOperator | None = None
+    label: str | None = None
+    capability: NodeRef | None = None
+    necessity: Necessity
+    weight: float
+    children: list[RequirementNodeOut] = Field(default_factory=list)
+
+
+class CapabilityOut(ApiModel):
+    id: uuid.UUID
+    name: str
+    slug: str
+    description: str
+    aliases: list[str] = Field(default_factory=list)
+
+
+class CapabilityDetailOut(CapabilityOut):
+    upstream_processes: list[NodeRef] = Field(
+        default_factory=list,
+        description=(
+            "Processes reaching this Capability. Several independent ones is "
+            "confluence (ontology §13), read off the graph rather than asserted."
+        ),
+    )
+    expressed_by: list[NodeRef] = Field(default_factory=list)
+
+
+class RequirementOut(ApiModel):
+    bottleneck_id: uuid.UUID
+    revision: int
+    root: RequirementNodeOut
+    capability_count: int
+
+
+# --------------------------------------------------------------------------- #
+# Assets
+# --------------------------------------------------------------------------- #
+
+
+class AssetIdentifiersOut(ApiModel):
+    """Not equity-only: a commodity carries a code and a benchmark, a currency a pair."""
+
+    ticker: str | None = None
+    exchange: str | None = None
+    isin: str | None = None
+    commodity_code: str | None = None
+    contract_code: str | None = None
+    benchmark: str | None = None
+    currency_pair: str | None = None
+    currency_code: str | None = None
+
+
+class AssetOut(ApiModel):
+    id: uuid.UUID
+    name: str
+    asset_class: AssetClass
+    identifiers: AssetIdentifiersOut
+    country: str | None
+    currency: str | None
+    sector: str | None
+    industry: str | None
+    is_active: bool
+
+
+class ExposureOut(ApiModel):
+    id: uuid.UUID
+    target: NodeRef
+    exposure_kind: ExposureKind
+    directness: str
+    magnitude: float
+    revenue_share: float | None
+    quantitative_basis: str | None = Field(
+        default=None, description="The figure a revenue share rests on, where one was supplied."
+    )
+    rationale: str
+    confidence: float
+    observed_at: datetime
+
+
+class PathStepOut(ApiModel):
+    relationship_type: RelationshipType
+    rationale: str | None
+    to: NodeRef
+
+
+class DiscoveryPathOut(ApiModel):
+    """One route from a Process down to an Asset, with the reason at each step."""
+
+    start: NodeRef
+    steps: list[PathStepOut]
+    depth: int
+    weight: float
+
+
+class AssetDetailOut(AssetOut):
+    discovery_chain: list[DiscoveryPathOut] = Field(
+        default_factory=list, description="Why this Asset is in the graph (issue #28)."
+    )
+    exposures: list[ExposureOut] = Field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- #
+# Scores, graph, runs
+# --------------------------------------------------------------------------- #
+
+
+class ScoreDimensionOut(ApiModel):
+    dimension: str
+    value: float
+    confidence: float
+    method: str
+    inputs: dict[str, float] = Field(
+        default_factory=dict, description="What the value was computed from."
+    )
+    rationale: str | None = None
+
+
+class ScorecardOut(ApiModel):
+    """One family, never a blend.
+
+    Thesis, Asset and Trade quality are separate by construction (ontology §17),
+    and there is deliberately no endpoint that combines them.
+    """
+
+    id: uuid.UUID
+    subject: NodeRef
+    family: ScoreFamily
+    observed_at: datetime
+    composite: float | None
+    composite_method: str | None
+    dimensions: list[ScoreDimensionOut] = Field(default_factory=list)
+
+
+class GraphNodeOut(ApiModel):
+    id: uuid.UUID
+    type: EntityType
+    label: str
+    slug: str | None = None
+
+
+class GraphEdgeOut(ApiModel):
+    source_id: uuid.UUID
+    target_id: uuid.UUID
+    relationship_type: RelationshipType
+    weight: float
+    confidence: float
+    rationale: str | None = None
+
+
+class SubgraphOut(ApiModel):
+    nodes: list[GraphNodeOut] = Field(default_factory=list)
+    edges: list[GraphEdgeOut] = Field(default_factory=list)
+
+
+class AssetReachOut(ApiModel):
+    asset: NodeRef
+    shortest_hops: int
+    distinct_source_count: int
+    best_weight: float
+    paths: list[DiscoveryPathOut] = Field(default_factory=list)
+
+
+class IntegrityViolationOut(ApiModel):
+    kind: str
+    node_id: uuid.UUID | None
+    detail: str
+
+
+class IntegrityReportOut(ApiModel):
+    ok: bool
+    checked_at: datetime | None
+    violations: list[IntegrityViolationOut] = Field(default_factory=list)
+
+
+class AgentRunOut(ApiModel):
+    """The provenance record every derived row cites."""
+
+    id: uuid.UUID
+    agent_name: str
+    agent_version: str
+    ontology_layer: str
+    status: str
+    as_of: datetime
+    started_at: datetime
+    finished_at: datetime | None
+    attempts: int
+    input_tokens: int
+    output_tokens: int
+    cost_usd: float | None
+    latency_ms: float | None
+    evaluation: dict[str, Any] | None = None
+    trigger_event_id: uuid.UUID | None = None
+
+
+class PipelineStageOut(ApiModel):
+    name: str
+    priority: int
+    concurrency: int
+    triggered_by: list[str]
+    emits: list[str]
+    description: str
+    has_handler: bool
+    has_reconciler: bool
+
+
+class QueueDepthOut(ApiModel):
+    stage: str | None
+    pending: int
+    running: int
+    failed: int
+    dead: int
+
+
+class HealthOut(ApiModel):
+    status: str
+    database: bool
+    schema_version: str | None = None
+
+
+RequirementNodeOut.model_rebuild()
+ProcessDetailOut.model_rebuild()

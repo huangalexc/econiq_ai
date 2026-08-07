@@ -27,6 +27,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/discover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discover
+         * @description Processes ranked by how much their evidence has moved.
+         *
+         *     The filters are the screener of §25. They are applied *before* ranking where
+         *     they are cheap row predicates and after where they depend on the ranking's
+         *     own measurements, but either way the ordering within a filtered set is the
+         *     same ordering the unfiltered feed would give — a screener that reranked its
+         *     results would answer a different question from the one the user asked.
+         */
+        get: operations["discover_api_discover_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/processes": {
         parameters: {
             query?: never;
@@ -73,6 +99,33 @@ export interface paths {
          * @description Append-only State history — the sequence *is* the record (ui_concept §32).
          */
         get: operations["state_history_api_processes__process_id__states_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/processes/{process_id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Timeline
+         * @description State changes, belief changes, evidence and critiques on one axis (#20).
+         *
+         *     Three separate lists would leave the reader joining them by eye, and the
+         *     join is the point: a belief change is only defensible next to the evidence
+         *     that arrived just before it. The entries carry both dates — when the thing
+         *     happened and when the system learned it — because a document published in
+         *     July and ingested in August belongs in two different places depending on
+         *     which question is being asked.
+         */
+        get: operations["timeline_api_processes__process_id__timeline_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -812,6 +865,33 @@ export interface components {
          */
         Direction: "downstream" | "upstream" | "both";
         /**
+         * DiscoverFeedOut
+         * @description The Discover feed, with its own limits attached.
+         *
+         *     ``unavailable_inputs`` is part of the response rather than documentation: a
+         *     ranking that silently drops half of its stated inputs is a different ranking
+         *     wearing the same name, and the screen should be able to say so.
+         */
+        DiscoverFeedOut: {
+            /** Processes */
+            processes?: components["schemas"]["EmergingProcessOut"][];
+            /** Weights */
+            weights?: {
+                [key: string]: number;
+            };
+            /** Window Days */
+            window_days: number;
+            /** Unavailable Inputs */
+            unavailable_inputs?: components["schemas"]["UnavailableInputOut"][];
+            /**
+             * Is Prediction
+             * @description A discovery ranking, not a forecast (ui_concept §5.2). Present so a client cannot mistake the ordering for a predicted return.
+             * @default false
+             * @constant
+             */
+            is_prediction: false;
+        };
+        /**
          * DiscoveryPathOut
          * @description One route from a Process down to an Asset, with the reason at each step.
          */
@@ -848,6 +928,68 @@ export interface components {
             publication_time: string;
             /** Storage Uri */
             storage_uri: string | null;
+        };
+        /**
+         * EmergingProcessOut
+         * @description A row of the emerging-Process panel (§5.1).
+         */
+        EmergingProcessOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Description */
+            description: string;
+            archetype: components["schemas"]["ProcessArchetype"] | null;
+            /** Archetype Confidence */
+            archetype_confidence: number | null;
+            status: components["schemas"]["ProcessStatus"];
+            /** Requires Review */
+            requires_review: boolean;
+            /** Revision */
+            revision: number;
+            current_state?: components["schemas"]["ProcessStateLabel"] | null;
+            /** State Confidence */
+            state_confidence?: number | null;
+            /** State Observed At */
+            state_observed_at?: string | null;
+            /** Rank Score */
+            rank_score: number;
+            /** Components */
+            components?: components["schemas"]["RankComponentOut"][];
+            /**
+             * Evidence Recent
+             * @description Evidence links in the trailing window.
+             */
+            evidence_recent: number;
+            /**
+             * Evidence Prior
+             * @description The window before it, for comparison.
+             */
+            evidence_prior: number;
+            /** Evidence Delta */
+            evidence_delta: number;
+            /**
+             * Contradiction Count
+             * @description Evidence recorded against this Process. Shown rather than netted off: contradiction is a scored dimension, not a deduction (§17).
+             */
+            contradiction_count: number;
+            /**
+             * Source Breadth
+             * @description Distinct publishers behind the supporting Events. A media-coverage proxy, reported beside the rank rather than inside it — Phase 0 has no market data, and calling this 'attention' would make §5.2's central claim untestable.
+             */
+            source_breadth: number;
+            /** Capability Count */
+            capability_count: number;
+            /** Asset Count */
+            asset_count: number;
+            /** Binding Bottlenecks */
+            binding_bottlenecks?: string[];
         };
         /**
          * EntityType
@@ -1272,6 +1414,16 @@ export interface components {
             /** State Observed At */
             state_observed_at?: string | null;
         };
+        /** ProcessTimelineOut */
+        ProcessTimelineOut: {
+            /**
+             * Process Id
+             * Format: uuid
+             */
+            process_id: string;
+            /** Entries */
+            entries?: components["schemas"]["TimelineEntryOut"][];
+        };
         /** QueueDepthOut */
         QueueDepthOut: {
             /** Stage */
@@ -1284,6 +1436,29 @@ export interface components {
             failed: number;
             /** Dead */
             dead: number;
+        };
+        /**
+         * RankComponentOut
+         * @description One input to the Discover rank, with the arithmetic left visible.
+         *
+         *     Returned so the ranking can be taken apart on screen (#25). A rank nobody
+         *     can decompose is a number the reader has to take on trust, which is the
+         *     opposite of what this product is for.
+         */
+        RankComponentOut: {
+            /** Name */
+            name: string;
+            /**
+             * Raw
+             * @description The measurement, in its own units.
+             */
+            raw: number;
+            /** Normalised */
+            normalised: number;
+            /** Weight */
+            weight: number;
+            /** Contribution */
+            contribution: number;
         };
         /**
          * RelationshipType
@@ -1411,6 +1586,63 @@ export interface components {
             /** Edges */
             edges?: components["schemas"]["GraphEdgeOut"][];
         };
+        /**
+         * TimelineEntryOut
+         * @description One dated thing that happened to a Process.
+         *
+         *     State changes, journal entries and evidence arrivals share an axis because
+         *     the question the Process screen answers is "what changed and why", and the
+         *     answer is usually an evidence arrival next to the belief change it caused.
+         *     Three separate lists would leave the reader doing that join by eye.
+         */
+        TimelineEntryOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "state" | "journal" | "evidence" | "critique";
+            /**
+             * Occurred At
+             * Format: date-time
+             * @description When the thing being described happened.
+             */
+            occurred_at: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             * @description When the system learned it.
+             */
+            recorded_at: string;
+            /** Title */
+            title: string;
+            /** Detail */
+            detail?: string | null;
+            /**
+             * Subject Id
+             * @description The Event, State or entry this entry points at.
+             */
+            subject_id?: string | null;
+            /**
+             * Supports
+             * @description Evidence direction, where the entry is evidence.
+             */
+            supports?: boolean | null;
+            /** Confidence Before */
+            confidence_before?: number | null;
+            /** Confidence After */
+            confidence_after?: number | null;
+            state_label?: components["schemas"]["ProcessStateLabel"] | null;
+        };
+        /**
+         * UnavailableInputOut
+         * @description A §5.1 ranking input this deployment cannot compute, and why.
+         */
+        UnavailableInputOut: {
+            /** Name */
+            name: string;
+            /** Reason */
+            reason: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1449,6 +1681,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthOut"];
+                };
+            };
+        };
+    };
+    discover_api_discover_get: {
+        parameters: {
+            query?: {
+                archetype?: components["schemas"]["ProcessArchetype"][] | null;
+                state?: components["schemas"]["ProcessStateLabel"][] | null;
+                min_state_confidence?: number | null;
+                min_assets?: number | null;
+                min_capabilities?: number | null;
+                /** @description Only Processes whose evidence in the trailing window exceeds the window before it. */
+                accelerating_only?: boolean;
+                requires_review?: boolean | null;
+                limit?: number;
+                offset?: number;
+                /** @description Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscoverFeedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1546,6 +1820,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProcessStateOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    timeline_api_processes__process_id__timeline_get: {
+        parameters: {
+            query?: {
+                /** @description Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then. */
+                as_of?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                process_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessTimelineOut"];
                 };
             };
             /** @description Validation Error */

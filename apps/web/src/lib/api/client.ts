@@ -98,9 +98,18 @@ type Ok<P extends keyof paths> = paths[P] extends {
 export const api = {
   health: (options?: RequestOptions) => request<Ok<"/health">>("/health", options),
 
+  /** Ranked emerging Processes and the screener behind them (ui_concept §5, §25). */
+  discover: (options?: RequestOptions) =>
+    request<Ok<"/api/discover">>("/api/discover", options),
+
   processes: {
     list: (options?: RequestOptions) =>
       request<Ok<"/api/processes">>("/api/processes", options),
+    timeline: (id: string, options?: RequestOptions) =>
+      request<Ok<"/api/processes/{process_id}/timeline">>(
+        `/api/processes/${id}/timeline`,
+        options,
+      ),
     get: (id: string, options?: RequestOptions) =>
       request<Ok<"/api/processes/{process_id}">>(`/api/processes/${id}`, options),
     states: (id: string, options?: RequestOptions) =>
@@ -198,6 +207,12 @@ export const api = {
   },
 };
 
+export type DiscoverFeed = Ok<"/api/discover">;
+// The list fields have Pydantic defaults, so the generated type marks them
+// optional; the API always sends them.
+export type EmergingProcess = NonNullable<DiscoverFeed["processes"]>[number];
+export type ProcessTimeline = Ok<"/api/processes/{process_id}/timeline">;
+export type TimelineEntry = NonNullable<ProcessTimeline["entries"]>[number];
 export type ProcessSummary = Ok<"/api/processes">[number];
 export type ProcessDetail = Ok<"/api/processes/{process_id}">;
 export type EventSummary = Ok<"/api/events">[number];

@@ -28,6 +28,200 @@
         }
       }
     },
+    "/api/discover": {
+      "get": {
+        "tags": [
+          "discover"
+        ],
+        "summary": "Discover",
+        "description": "Processes ranked by how much their evidence has moved.\n\nThe filters are the screener of \u00a725. They are applied *before* ranking where\nthey are cheap row predicates and after where they depend on the ranking's\nown measurements, but either way the ordering within a filtered set is the\nsame ordering the unfiltered feed would give \u2014 a screener that reranked its\nresults would answer a different question from the one the user asked.",
+        "operationId": "discover_api_discover_get",
+        "parameters": [
+          {
+            "name": "archetype",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProcessArchetype"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Archetype"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProcessStateLabel"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "name": "min_state_confidence",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min State Confidence"
+            }
+          },
+          {
+            "name": "min_assets",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Assets"
+            }
+          },
+          {
+            "name": "min_capabilities",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Capabilities"
+            }
+          },
+          {
+            "name": "accelerating_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only Processes whose evidence in the trailing window exceeds the window before it.",
+              "default": false,
+              "title": "Accelerating Only"
+            },
+            "description": "Only Processes whose evidence in the trailing window exceeds the window before it."
+          },
+          {
+            "name": "requires_review",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Requires Review"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverFeedOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/processes": {
       "get": {
         "tags": [
@@ -277,6 +471,92 @@
                     "$ref": "#/components/schemas/ProcessStateOut"
                   },
                   "title": "Response State History Api Processes  Process Id  States Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processes/{process_id}/timeline": {
+      "get": {
+        "tags": [
+          "processes"
+        ],
+        "summary": "Timeline",
+        "description": "State changes, belief changes, evidence and critiques on one axis (#20).\n\nThree separate lists would leave the reader joining them by eye, and the\njoin is the point: a belief change is only defensible next to the evidence\nthat arrived just before it. The entries carry both dates \u2014 when the thing\nhappened and when the system learned it \u2014 because a document published in\nJuly and ingested in August belongs in two different places depending on\nwhich question is being asked.",
+        "operationId": "timeline_api_processes__process_id__timeline_get",
+        "parameters": [
+          {
+            "name": "process_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Process Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessTimelineOut"
                 }
               }
             }
@@ -2787,6 +3067,49 @@
         "title": "Direction",
         "description": "Which way to walk the typed edges.\n\nThe canonical chain runs Process \u2192 Bottleneck \u2192 Capability \u2192 Asset, so\n``DOWNSTREAM`` answers \"what could express this Process\" and ``UPSTREAM``\nanswers \"why is this Asset here\" \u2014 the two questions the UI asks most."
       },
+      "DiscoverFeedOut": {
+        "properties": {
+          "processes": {
+            "items": {
+              "$ref": "#/components/schemas/EmergingProcessOut"
+            },
+            "type": "array",
+            "title": "Processes"
+          },
+          "weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Weights"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "unavailable_inputs": {
+            "items": {
+              "$ref": "#/components/schemas/UnavailableInputOut"
+            },
+            "type": "array",
+            "title": "Unavailable Inputs"
+          },
+          "is_prediction": {
+            "type": "boolean",
+            "const": false,
+            "title": "Is Prediction",
+            "description": "A discovery ranking, not a forecast (ui_concept \u00a75.2). Present so a client cannot mistake the ordering for a predicted return.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "window_days"
+        ],
+        "title": "DiscoverFeedOut",
+        "description": "The Discover feed, with its own limits attached.\n\n``unavailable_inputs`` is part of the response rather than documentation: a\nranking that silently drops half of its stated inputs is a different ranking\nwearing the same name, and the screen should be able to say so."
+      },
       "DiscoveryPathOut": {
         "properties": {
           "start": {
@@ -2890,6 +3213,165 @@
           "storage_uri"
         ],
         "title": "DocumentOut"
+      },
+      "EmergingProcessOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "archetype": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessArchetype"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archetype_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archetype Confidence"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProcessStatus"
+          },
+          "requires_review": {
+            "type": "boolean",
+            "title": "Requires Review"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "current_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessStateLabel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Confidence"
+          },
+          "state_observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Observed At"
+          },
+          "rank_score": {
+            "type": "number",
+            "title": "Rank Score"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/RankComponentOut"
+            },
+            "type": "array",
+            "title": "Components"
+          },
+          "evidence_recent": {
+            "type": "integer",
+            "title": "Evidence Recent",
+            "description": "Evidence links in the trailing window."
+          },
+          "evidence_prior": {
+            "type": "integer",
+            "title": "Evidence Prior",
+            "description": "The window before it, for comparison."
+          },
+          "evidence_delta": {
+            "type": "integer",
+            "title": "Evidence Delta"
+          },
+          "contradiction_count": {
+            "type": "integer",
+            "title": "Contradiction Count",
+            "description": "Evidence recorded against this Process. Shown rather than netted off: contradiction is a scored dimension, not a deduction (\u00a717)."
+          },
+          "source_breadth": {
+            "type": "integer",
+            "title": "Source Breadth",
+            "description": "Distinct publishers behind the supporting Events. A media-coverage proxy, reported beside the rank rather than inside it \u2014 Phase 0 has no market data, and calling this 'attention' would make \u00a75.2's central claim untestable."
+          },
+          "capability_count": {
+            "type": "integer",
+            "title": "Capability Count"
+          },
+          "asset_count": {
+            "type": "integer",
+            "title": "Asset Count"
+          },
+          "binding_bottlenecks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Binding Bottlenecks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "description",
+          "archetype",
+          "archetype_confidence",
+          "status",
+          "requires_review",
+          "revision",
+          "rank_score",
+          "evidence_recent",
+          "evidence_prior",
+          "evidence_delta",
+          "contradiction_count",
+          "source_breadth",
+          "capability_count",
+          "asset_count"
+        ],
+        "title": "EmergingProcessOut",
+        "description": "A row of the emerging-Process panel (\u00a75.1)."
       },
       "EntityType": {
         "type": "string",
@@ -4011,6 +4493,28 @@
         ],
         "title": "ProcessSummaryOut"
       },
+      "ProcessTimelineOut": {
+        "properties": {
+          "process_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Process Id"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEntryOut"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "process_id"
+        ],
+        "title": "ProcessTimelineOut"
+      },
       "QueueDepthOut": {
         "properties": {
           "stage": {
@@ -4051,6 +4555,44 @@
           "dead"
         ],
         "title": "QueueDepthOut"
+      },
+      "RankComponentOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "raw": {
+            "type": "number",
+            "title": "Raw",
+            "description": "The measurement, in its own units."
+          },
+          "normalised": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Normalised"
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight"
+          },
+          "contribution": {
+            "type": "number",
+            "title": "Contribution"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "raw",
+          "normalised",
+          "weight",
+          "contribution"
+        ],
+        "title": "RankComponentOut",
+        "description": "One input to the Discover rank, with the arithmetic left visible.\n\nReturned so the ranking can be taken apart on screen (#25). A rank nobody\ncan decompose is a number the reader has to take on trust, which is the\nopposite of what this product is for."
       },
       "RelationshipType": {
         "type": "string",
@@ -4334,6 +4876,134 @@
         "additionalProperties": false,
         "type": "object",
         "title": "SubgraphOut"
+      },
+      "TimelineEntryOut": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "state",
+              "journal",
+              "evidence",
+              "critique"
+            ],
+            "title": "Kind"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At",
+            "description": "When the thing being described happened."
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At",
+            "description": "When the system learned it."
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id",
+            "description": "The Event, State or entry this entry points at."
+          },
+          "supports": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supports",
+            "description": "Evidence direction, where the entry is evidence."
+          },
+          "confidence_before": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Before"
+          },
+          "confidence_after": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence After"
+          },
+          "state_label": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessStateLabel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "occurred_at",
+          "recorded_at",
+          "title"
+        ],
+        "title": "TimelineEntryOut",
+        "description": "One dated thing that happened to a Process.\n\nState changes, journal entries and evidence arrivals share an axis because\nthe question the Process screen answers is \"what changed and why\", and the\nanswer is usually an evidence arrival next to the belief change it caused.\nThree separate lists would leave the reader doing that join by eye."
+      },
+      "UnavailableInputOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "reason"
+        ],
+        "title": "UnavailableInputOut",
+        "description": "A \u00a75.1 ranking input this deployment cannot compute, and why."
       },
       "ValidationError": {
         "properties": {

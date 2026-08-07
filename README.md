@@ -58,6 +58,8 @@ not the measurement.
 | Issue | Delivered |
 |---|---|
 | #18 App shell | `apps/web` — Next.js 16 + Tailwind 4, sidebar per ui_concept §3, ⌘K command bar, a global `as_of` control, and an API client generated from the FastAPI OpenAPI document |
+| #20 BFF endpoints | `/api/discover` — Processes ranked by evidence movement, every rank decomposable; `/api/processes/{id}/timeline` — state, belief, evidence and critique on one axis |
+| #21 Discover screen | the emerging-Process panel, hot cards and the screener, with [Explain] on every rank |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000
@@ -67,6 +69,14 @@ The `as_of` cut-off lives in the URL and in every query key, so a reconstructed
 view is linkable and can never share a cache entry with the present. When one is
 set the whole header changes colour — mistaking a reconstruction for the current
 state is worse than not having the feature.
+
+The Discover ranking returns its own limits. Of the eight inputs ui_concept §5.1
+asks for, six are computed, market attention is proxied by publisher count (and
+named `source_breadth`, because it is media coverage), and historical analogue
+strength needs Phase 2. The API says which are missing and the screen renders it.
+
+Still open in #20: watchlist and alert CRUD needs users (#19), and Asset
+comparison payloads need the Asset Quality agent (#29).
 
 ## Quick start
 

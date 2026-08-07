@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from econiq_ontology import (
     AssetClass,
@@ -498,3 +498,113 @@ class HealthOut(ApiModel):
 
 RequirementNodeOut.model_rebuild()
 ProcessDetailOut.model_rebuild()
+
+
+# --------------------------------------------------------------------------- #
+# Discover feed (issue #20, ui_concept §5)
+# --------------------------------------------------------------------------- #
+
+
+class RankComponentOut(ApiModel):
+    """One input to the Discover rank, with the arithmetic left visible.
+
+    Returned so the ranking can be taken apart on screen (#25). A rank nobody
+    can decompose is a number the reader has to take on trust, which is the
+    opposite of what this product is for.
+    """
+
+    name: str
+    raw: float = Field(description="The measurement, in its own units.")
+    normalised: float = Field(ge=0.0, le=1.0)
+    weight: float
+    contribution: float
+
+
+class EmergingProcessOut(ProcessSummaryOut):
+    """A row of the emerging-Process panel (§5.1)."""
+
+    rank_score: float
+    components: list[RankComponentOut] = Field(default_factory=list)
+    evidence_recent: int = Field(description="Evidence links in the trailing window.")
+    evidence_prior: int = Field(description="The window before it, for comparison.")
+    evidence_delta: int
+    contradiction_count: int = Field(
+        description=(
+            "Evidence recorded against this Process. Shown rather than netted "
+            "off: contradiction is a scored dimension, not a deduction (§17)."
+        )
+    )
+    source_breadth: int = Field(
+        description=(
+            "Distinct publishers behind the supporting Events. A media-coverage "
+            "proxy, reported beside the rank rather than inside it — Phase 0 has "
+            "no market data, and calling this 'attention' would make §5.2's "
+            "central claim untestable."
+        )
+    )
+    capability_count: int
+    asset_count: int
+    binding_bottlenecks: list[str] = Field(default_factory=list)
+
+
+class UnavailableInputOut(ApiModel):
+    """A §5.1 ranking input this deployment cannot compute, and why."""
+
+    name: str
+    reason: str
+
+
+class DiscoverFeedOut(ApiModel):
+    """The Discover feed, with its own limits attached.
+
+    ``unavailable_inputs`` is part of the response rather than documentation: a
+    ranking that silently drops half of its stated inputs is a different ranking
+    wearing the same name, and the screen should be able to say so.
+    """
+
+    processes: list[EmergingProcessOut] = Field(default_factory=list)
+    weights: dict[str, float] = Field(default_factory=dict)
+    window_days: int
+    unavailable_inputs: list[UnavailableInputOut] = Field(default_factory=list)
+    is_prediction: Literal[False] = Field(
+        default=False,
+        description=(
+            "A discovery ranking, not a forecast (ui_concept §5.2). Present so a "
+            "client cannot mistake the ordering for a predicted return."
+        ),
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Process timeline (issue #20)
+# --------------------------------------------------------------------------- #
+
+
+class TimelineEntryOut(ApiModel):
+    """One dated thing that happened to a Process.
+
+    State changes, journal entries and evidence arrivals share an axis because
+    the question the Process screen answers is "what changed and why", and the
+    answer is usually an evidence arrival next to the belief change it caused.
+    Three separate lists would leave the reader doing that join by eye.
+    """
+
+    kind: Literal["state", "journal", "evidence", "critique"]
+    occurred_at: datetime = Field(description="When the thing being described happened.")
+    recorded_at: datetime = Field(description="When the system learned it.")
+    title: str
+    detail: str | None = None
+    subject_id: uuid.UUID | None = Field(
+        default=None, description="The Event, State or entry this entry points at."
+    )
+    supports: bool | None = Field(
+        default=None, description="Evidence direction, where the entry is evidence."
+    )
+    confidence_before: float | None = None
+    confidence_after: float | None = None
+    state_label: ProcessStateLabel | None = None
+
+
+class ProcessTimelineOut(ApiModel):
+    process_id: uuid.UUID
+    entries: list[TimelineEntryOut] = Field(default_factory=list)

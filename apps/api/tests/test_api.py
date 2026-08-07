@@ -709,3 +709,44 @@ async def test_an_unknown_origin_is_not_allowed(client):
     )
 
     assert "access-control-allow-origin" not in response.headers
+
+
+async def test_the_timeline_puts_evidence_next_to_the_belief_it_changed(client, graph):
+    """Issue #20. Three separate lists would leave the reader doing this join by eye."""
+    response = await client.get(f"/api/processes/{graph['process']}/timeline")
+
+    assert response.status_code == 200
+    entries = response.json()["entries"]
+    kinds = {entry["kind"] for entry in entries}
+    assert kinds == {"state", "journal", "evidence", "critique"}
+
+    # Newest first, on the axis of when things happened in the world.
+    occurred = [entry["occurred_at"] for entry in entries]
+    assert occurred == sorted(occurred, reverse=True)
+
+    # Both clocks travel with every entry: a document published in July and
+    # ingested in August belongs in two different places depending on the
+    # question being asked.
+    assert all(entry["recorded_at"] for entry in entries)
+
+
+async def test_a_timeline_entry_says_which_direction_the_evidence_pointed(client, graph):
+    entries = (await client.get(f"/api/processes/{graph['process']}/timeline")).json()["entries"]
+
+    evidence = next(entry for entry in entries if entry["kind"] == "evidence")
+    assert evidence["supports"] is True
+    # A critique is evidence against the thesis surviving unchanged.
+    critique = next(entry for entry in entries if entry["kind"] == "critique")
+    assert critique["supports"] is False
+
+
+async def test_the_timeline_excludes_what_was_recorded_after_the_cut_off(client, graph):
+    """A replay must not show a belief change the system had not made yet."""
+    entries = (
+        await client.get(
+            f"/api/processes/{graph['process']}/timeline",
+            params={"as_of": (PUB - timedelta(days=1)).isoformat()},
+        )
+    ).json()["entries"]
+
+    assert entries == []

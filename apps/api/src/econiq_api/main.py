@@ -20,11 +20,13 @@ a past date is a requirement (ui_concept §32), not a feature to add later.
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from econiq_data_models import DatabaseSettings
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from econiq_api.deps import AppState
 from econiq_api.routers import (
@@ -52,6 +54,21 @@ Asset quality and Trade quality are never combined.
 """
 
 
+#: Origins allowed to call this API from a browser. The terminal (#18) runs on
+#: its own port in development, so without this every request from it fails
+#: preflight. Read from the environment rather than hardcoded, and never `*`:
+#: authentication arrives in #19, and an allowlist that was permissive before
+#: credentials existed is one nobody revisits afterwards.
+DEFAULT_ALLOWED_ORIGINS = ("http://localhost:3000", "http://127.0.0.1:3000")
+
+
+def allowed_origins() -> list[str]:
+    configured = os.getenv("ECONIQ_CORS_ORIGINS")
+    if configured is None:
+        return list(DEFAULT_ALLOWED_ORIGINS)
+    return [origin.strip() for origin in configured.split(",") if origin.strip()]
+
+
 def create_app(settings: DatabaseSettings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -68,6 +85,16 @@ def create_app(settings: DatabaseSettings | None = None) -> FastAPI:
         description=DESCRIPTION,
         lifespan=lifespan,
     )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins(),
+        # Only reads exist, so only reads are permitted. A write method allowed
+        # here would be a route that does not exist — until one day it does.
+        allow_methods=["GET", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+        allow_credentials=True,
+    )
+
     for router in (
         health.router,
         processes.router,

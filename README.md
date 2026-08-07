@@ -53,6 +53,21 @@ reassigned to Phase 1 alongside the Asset comparison matrix (#29). The check
 still runs and still reports what it finds — a deferral suspends the verdict,
 not the measurement.
 
+## Phase 1 — research terminal
+
+| Issue | Delivered |
+|---|---|
+| #18 App shell | `apps/web` — Next.js 16 + Tailwind 4, sidebar per ui_concept §3, ⌘K command bar, a global `as_of` control, and an API client generated from the FastAPI OpenAPI document |
+
+```bash
+cd apps/web && npm install && npm run dev   # needs the API on :8000
+```
+
+The `as_of` cut-off lives in the URL and in every query key, so a reconstructed
+view is linkable and can never share a cache entry with the present. When one is
+set the whole header changes colour — mistaking a reconstruction for the current
+state is worse than not having the feature.
+
 ## Quick start
 
 ```bash

@@ -1,0 +1,4380 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "econiq domain API",
+    "description": "Evidence-backed, Process-first investment research.\n\nThe chain every response can be walked back along:\n\n    Documents \u2192 Claims \u2192 Events \u2192 Processes \u2192 States\n    \u2192 Bottlenecks \u2192 Capabilities \u2192 Assets\n\nReads accept `as_of` to reconstruct the graph as it was at a past instant.\nScores are returned per family with their inputs attached \u2014 Thesis quality,\nAsset quality and Trade quality are never combined.\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "description": "Readiness, including the migration the database is actually on.\n\nThe schema version matters: an API serving a database one migration behind\nwill fail in ways that look like data problems rather than deployment ones.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processes": {
+      "get": {
+        "tags": [
+          "processes"
+        ],
+        "summary": "List Processes",
+        "operationId": "list_processes_api_processes_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProcessStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "requires_review",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Requires Review"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProcessSummaryOut"
+                  },
+                  "title": "Response List Processes Api Processes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processes/{process_id}": {
+      "get": {
+        "tags": [
+          "processes"
+        ],
+        "summary": "Get Process",
+        "operationId": "get_process_api_processes__process_id__get",
+        "parameters": [
+          {
+            "name": "process_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Process Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processes/{process_id}/states": {
+      "get": {
+        "tags": [
+          "processes"
+        ],
+        "summary": "State History",
+        "description": "Append-only State history \u2014 the sequence *is* the record (ui_concept \u00a732).",
+        "operationId": "state_history_api_processes__process_id__states_get",
+        "parameters": [
+          {
+            "name": "process_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Process Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProcessStateOut"
+                  },
+                  "title": "Response State History Api Processes  Process Id  States Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processes/{process_id}/journal": {
+      "get": {
+        "tags": [
+          "processes"
+        ],
+        "summary": "Journal",
+        "description": "Why the system changed its mind, chronologically (PRD \u00a721).",
+        "operationId": "journal_api_processes__process_id__journal_get",
+        "parameters": [
+          {
+            "name": "process_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Process Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JournalEntryOut"
+                  },
+                  "title": "Response Journal Api Processes  Process Id  Journal Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processes/{process_id}/critiques": {
+      "get": {
+        "tags": [
+          "processes"
+        ],
+        "summary": "Critiques",
+        "description": "Adversarial findings, including superseded ones.\n\nAddressed critiques are returned rather than hidden: a thesis that survived\nfour attacks is stronger than one never attacked, and that is only visible\nif the attacks remain on the record.",
+        "operationId": "critiques_api_processes__process_id__critiques_get",
+        "parameters": [
+          {
+            "name": "process_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Process Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CritiqueStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CritiqueOut"
+                  },
+                  "title": "Response Critiques Api Processes  Process Id  Critiques Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "List Events",
+        "operationId": "list_events_api_events_get",
+        "parameters": [
+          {
+            "name": "event_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Type"
+            }
+          },
+          {
+            "name": "propagated_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only Events that cleared the significance gate.",
+              "default": false,
+              "title": "Propagated Only"
+            },
+            "description": "Only Events that cleared the significance gate."
+          },
+          {
+            "name": "min_materiality",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 10,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Materiality"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventOut"
+                  },
+                  "title": "Response List Events Api Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Get Event",
+        "operationId": "get_event_api_events__event_id__get",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Event Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence/{node_id}": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Evidence Trail",
+        "description": "Trace a node back through Events and Claims to its documents.",
+        "operationId": "evidence_trail_api_evidence__node_id__get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceTrailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bottlenecks": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "summary": "List Bottlenecks",
+        "operationId": "list_bottlenecks_api_bottlenecks_get",
+        "parameters": [
+          {
+            "name": "binding_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only constraints that bind now, not ones that would later.",
+              "default": false,
+              "title": "Binding Only"
+            },
+            "description": "Only constraints that bind now, not ones that would later."
+          },
+          {
+            "name": "process_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Process Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BottleneckOut"
+                  },
+                  "title": "Response List Bottlenecks Api Bottlenecks Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bottlenecks/{bottleneck_id}": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "summary": "Get Bottleneck",
+        "operationId": "get_bottleneck_api_bottlenecks__bottleneck_id__get",
+        "parameters": [
+          {
+            "name": "bottleneck_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Bottleneck Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BottleneckOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bottlenecks/{bottleneck_id}/requirements": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "summary": "Get Requirements",
+        "description": "The AND/OR/optional structure that would resolve this constraint.",
+        "operationId": "get_requirements_api_bottlenecks__bottleneck_id__requirements_get",
+        "parameters": [
+          {
+            "name": "bottleneck_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Bottleneck Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/capabilities": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "summary": "List Capabilities",
+        "operationId": "list_capabilities_api_capabilities_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityOut"
+                  },
+                  "title": "Response List Capabilities Api Capabilities Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/capabilities/{capability_id}": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "summary": "Get Capability",
+        "operationId": "get_capability_api_capabilities__capability_id__get",
+        "parameters": [
+          {
+            "name": "capability_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Capability Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilityDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assets": {
+      "get": {
+        "tags": [
+          "assets"
+        ],
+        "summary": "List Assets",
+        "operationId": "list_assets_api_assets_get",
+        "parameters": [
+          {
+            "name": "asset_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssetClass"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Asset Class"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssetOut"
+                  },
+                  "title": "Response List Assets Api Assets Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assets/{asset_id}": {
+      "get": {
+        "tags": [
+          "assets"
+        ],
+        "summary": "Get Asset",
+        "operationId": "get_asset_api_assets__asset_id__get",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Asset Id"
+            }
+          },
+          {
+            "name": "max_hops",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 8,
+              "minimum": 1,
+              "default": 4,
+              "title": "Max Hops"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assets/{asset_id}/discovery-chain": {
+      "get": {
+        "tags": [
+          "assets"
+        ],
+        "summary": "Discovery Chain",
+        "description": "Every route from a Process down to this Asset, shortest first.",
+        "operationId": "discovery_chain_api_assets__asset_id__discovery_chain_get",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Asset Id"
+            }
+          },
+          {
+            "name": "max_hops",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 8,
+              "minimum": 1,
+              "default": 4,
+              "title": "Max Hops"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DiscoveryPathOut"
+                  },
+                  "title": "Response Discovery Chain Api Assets  Asset Id  Discovery Chain Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graph/reach": {
+      "get": {
+        "tags": [
+          "graph"
+        ],
+        "summary": "Asset Reach",
+        "description": "Assets reachable from these Processes, most-converged-on first.",
+        "operationId": "asset_reach_api_graph_reach_get",
+        "parameters": [
+          {
+            "name": "process_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "title": "Process Id"
+            }
+          },
+          {
+            "name": "max_hops",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 8,
+              "minimum": 1,
+              "default": 4,
+              "title": "Max Hops"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssetReachOut"
+                  },
+                  "title": "Response Asset Reach Api Graph Reach Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graph/subgraph": {
+      "get": {
+        "tags": [
+          "graph"
+        ],
+        "summary": "Subgraph",
+        "description": "Nodes and edges around a set of seeds, for the explorer (issue #26).",
+        "operationId": "subgraph_api_graph_subgraph_get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 4,
+              "minimum": 1,
+              "default": 2,
+              "title": "Depth"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubgraphOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graph/paths": {
+      "get": {
+        "tags": [
+          "graph"
+        ],
+        "summary": "Paths",
+        "operationId": "paths_api_graph_paths_get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Direction",
+              "default": "downstream"
+            }
+          },
+          {
+            "name": "max_hops",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 8,
+              "minimum": 1,
+              "default": 3,
+              "title": "Max Hops"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DiscoveryPathOut"
+                  },
+                  "title": "Response Paths Api Graph Paths Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graph/integrity": {
+      "get": {
+        "tags": [
+          "graph"
+        ],
+        "summary": "Integrity",
+        "description": "Structural checks Postgres cannot express (issue #13).\n\nExposed because the Research Quality Auditor (#57) and the eval harness both\nneed it, and because a graph that has quietly acquired a causal cycle should\nbe visible rather than discovered through a traversal that makes no sense.",
+        "operationId": "integrity_api_graph_integrity_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrityReportOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "List Runs",
+        "operationId": "list_runs_api_runs_get",
+        "parameters": [
+          {
+            "name": "agent_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent Name"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "failed_evaluation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only runs whose output was refused by a deterministic check.",
+              "title": "Failed Evaluation"
+            },
+            "description": "Only runs whose output was refused by a deterministic check."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentRunOut"
+                  },
+                  "title": "Response List Runs Api Runs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Get Run",
+        "operationId": "get_run_api_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scores/{subject_id}": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Scores",
+        "description": "Scorecards for a subject, one family per card.\n\nThere is deliberately no endpoint that blends families: Thesis quality,\nAsset quality and Trade quality are separate by construction (ontology \u00a717),\nand offering a combined number here would undo that at the last step.",
+        "operationId": "scores_api_scores__subject_id__get",
+        "parameters": [
+          {
+            "name": "subject_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Subject Id"
+            }
+          },
+          {
+            "name": "family",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScoreFamily"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Family"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScorecardOut"
+                  },
+                  "title": "Response Scores Api Scores  Subject Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pipeline": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Pipeline",
+        "description": "The declared pipeline (issue #14).\n\n``has_handler`` and ``has_reconciler`` are reported rather than assumed: a\nstage with no handler never runs, and one with no reconciler has no backstop\nif its triggering event is lost.",
+        "operationId": "pipeline_api_pipeline_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PipelineStageOut"
+                  },
+                  "type": "array",
+                  "title": "Response Pipeline Api Pipeline Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pipeline/queue": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Queue Depth",
+        "operationId": "queue_depth_api_pipeline_queue_get",
+        "parameters": [
+          {
+            "name": "stage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Stage"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueueDepthOut"
+                  },
+                  "title": "Response Queue Depth Api Pipeline Queue Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgentRunOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "agent_name": {
+            "type": "string",
+            "title": "Agent Name"
+          },
+          "agent_version": {
+            "type": "string",
+            "title": "Agent Version"
+          },
+          "ontology_layer": {
+            "type": "string",
+            "title": "Ontology Layer"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "evaluation": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluation"
+          },
+          "trigger_event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Event Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "agent_name",
+          "agent_version",
+          "ontology_layer",
+          "status",
+          "as_of",
+          "started_at",
+          "finished_at",
+          "attempts",
+          "input_tokens",
+          "output_tokens",
+          "cost_usd",
+          "latency_ms"
+        ],
+        "title": "AgentRunOut",
+        "description": "The provenance record every derived row cites."
+      },
+      "AssetClass": {
+        "type": "string",
+        "enum": [
+          "common_stock",
+          "etf",
+          "commodity",
+          "currency",
+          "bond",
+          "index"
+        ],
+        "title": "AssetClass",
+        "description": "Ontology \u00a714. V1 expresses theses through the underlying asset only \u2014\noptions and derivatives are explicitly out of scope."
+      },
+      "AssetDetailOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "asset_class": {
+            "$ref": "#/components/schemas/AssetClass"
+          },
+          "identifiers": {
+            "$ref": "#/components/schemas/AssetIdentifiersOut"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "sector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sector"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "discovery_chain": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryPathOut"
+            },
+            "type": "array",
+            "title": "Discovery Chain",
+            "description": "Why this Asset is in the graph (issue #28)."
+          },
+          "exposures": {
+            "items": {
+              "$ref": "#/components/schemas/ExposureOut"
+            },
+            "type": "array",
+            "title": "Exposures"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "asset_class",
+          "identifiers",
+          "country",
+          "currency",
+          "sector",
+          "industry",
+          "is_active"
+        ],
+        "title": "AssetDetailOut"
+      },
+      "AssetIdentifiersOut": {
+        "properties": {
+          "ticker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticker"
+          },
+          "exchange": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exchange"
+          },
+          "isin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isin"
+          },
+          "commodity_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commodity Code"
+          },
+          "contract_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Code"
+          },
+          "benchmark": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark"
+          },
+          "currency_pair": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency Pair"
+          },
+          "currency_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AssetIdentifiersOut",
+        "description": "Not equity-only: a commodity carries a code and a benchmark, a currency a pair."
+      },
+      "AssetOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "asset_class": {
+            "$ref": "#/components/schemas/AssetClass"
+          },
+          "identifiers": {
+            "$ref": "#/components/schemas/AssetIdentifiersOut"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "sector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sector"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "asset_class",
+          "identifiers",
+          "country",
+          "currency",
+          "sector",
+          "industry",
+          "is_active"
+        ],
+        "title": "AssetOut"
+      },
+      "AssetReachOut": {
+        "properties": {
+          "asset": {
+            "$ref": "#/components/schemas/NodeRef"
+          },
+          "shortest_hops": {
+            "type": "integer",
+            "title": "Shortest Hops"
+          },
+          "distinct_source_count": {
+            "type": "integer",
+            "title": "Distinct Source Count"
+          },
+          "best_weight": {
+            "type": "number",
+            "title": "Best Weight"
+          },
+          "paths": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryPathOut"
+            },
+            "type": "array",
+            "title": "Paths"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "asset",
+          "shortest_hops",
+          "distinct_source_count",
+          "best_weight"
+        ],
+        "title": "AssetReachOut"
+      },
+      "BottleneckKind": {
+        "type": "string",
+        "enum": [
+          "physical_capacity",
+          "input_supply",
+          "processing_capacity",
+          "infrastructure",
+          "regulatory_permitting",
+          "capital",
+          "labor_skills",
+          "technology",
+          "logistics",
+          "other"
+        ],
+        "title": "BottleneckKind",
+        "description": "Ontology \u00a711 \u2014 what class of constraint blocks the Process."
+      },
+      "BottleneckOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "process_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Process Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/BottleneckKind"
+          },
+          "currently_binding": {
+            "type": "boolean",
+            "title": "Currently Binding",
+            "description": "Whether it constrains the Process now, or would only later."
+          },
+          "demand_pressure": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Demand Pressure"
+          },
+          "supply_elasticity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supply Elasticity"
+          },
+          "time_to_expand": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time To Expand"
+          },
+          "current_constraint": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Constraint"
+          },
+          "relief_indicators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Relief Indicators"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "resolved": {
+            "type": "boolean",
+            "title": "Resolved"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "process_id",
+          "name",
+          "description",
+          "kind",
+          "currently_binding",
+          "demand_pressure",
+          "supply_elasticity",
+          "time_to_expand",
+          "current_constraint",
+          "confidence",
+          "resolved"
+        ],
+        "title": "BottleneckOut"
+      },
+      "CapabilityDetailOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases"
+          },
+          "upstream_processes": {
+            "items": {
+              "$ref": "#/components/schemas/NodeRef"
+            },
+            "type": "array",
+            "title": "Upstream Processes",
+            "description": "Processes reaching this Capability. Several independent ones is confluence (ontology \u00a713), read off the graph rather than asserted."
+          },
+          "expressed_by": {
+            "items": {
+              "$ref": "#/components/schemas/NodeRef"
+            },
+            "type": "array",
+            "title": "Expressed By"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "description"
+        ],
+        "title": "CapabilityDetailOut"
+      },
+      "CapabilityOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "description"
+        ],
+        "title": "CapabilityOut"
+      },
+      "ClaimOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "document_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Document Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "claim_type": {
+            "type": "string",
+            "title": "Claim Type"
+          },
+          "assertion_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assertion Source"
+          },
+          "attributed_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attributed To"
+          },
+          "extraction_confidence": {
+            "type": "number",
+            "title": "Extraction Confidence"
+          },
+          "source_location": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Source Location",
+            "description": "Verified span: the quote and its offsets in the parsed document."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "document_id",
+          "text",
+          "claim_type",
+          "assertion_source",
+          "attributed_to",
+          "extraction_confidence",
+          "source_location"
+        ],
+        "title": "ClaimOut"
+      },
+      "CritiqueKind": {
+        "type": "string",
+        "enum": [
+          "unsupported_assumption",
+          "missing_causal_link",
+          "contradictory_evidence",
+          "alternative_explanation",
+          "historical_counterexample",
+          "falsifying_indicator",
+          "spurious_correlation"
+        ],
+        "title": "CritiqueKind",
+        "description": "The seven lines of attack the Process Critic must take (agent doc \u00a76.5).\n\nA closed vocabulary because the critic's coverage is measurable: an\nadversarial pass that only ever finds \"contradictory evidence\" is not\nattacking the thesis from seven directions."
+      },
+      "CritiqueOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CritiqueKind"
+          },
+          "statement": {
+            "type": "string",
+            "title": "Statement"
+          },
+          "severity": {
+            "type": "number",
+            "title": "Severity"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "testable_with": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Testable With"
+          },
+          "is_most_damaging": {
+            "type": "boolean",
+            "title": "Is Most Damaging"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CritiqueStatus"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "statement",
+          "severity",
+          "rationale",
+          "testable_with",
+          "is_most_damaging",
+          "status",
+          "observed_at"
+        ],
+        "title": "CritiqueOut"
+      },
+      "CritiqueStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "addressed",
+          "dismissed",
+          "confirmed"
+        ],
+        "title": "CritiqueStatus",
+        "description": "What became of a critique.\n\nCritiques are never deleted. A thesis that survived an attack is stronger\nthan one that was never attacked, and that is only visible if the attacks\nremain on the record."
+      },
+      "Direction": {
+        "type": "string",
+        "enum": [
+          "downstream",
+          "upstream",
+          "both"
+        ],
+        "title": "Direction",
+        "description": "Which way to walk the typed edges.\n\nThe canonical chain runs Process \u2192 Bottleneck \u2192 Capability \u2192 Asset, so\n``DOWNSTREAM`` answers \"what could express this Process\" and ``UPSTREAM``\nanswers \"why is this Asset here\" \u2014 the two questions the UI asks most."
+      },
+      "DiscoveryPathOut": {
+        "properties": {
+          "start": {
+            "$ref": "#/components/schemas/NodeRef"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/PathStepOut"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "depth": {
+            "type": "integer",
+            "title": "Depth"
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "steps",
+          "depth",
+          "weight"
+        ],
+        "title": "DiscoveryPathOut",
+        "description": "One route from a Process down to an Asset, with the reason at each step."
+      },
+      "DocumentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "publisher": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publisher"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "document_type": {
+            "type": "string",
+            "title": "Document Type"
+          },
+          "publication_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Publication Time"
+          },
+          "storage_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Uri"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "publisher",
+          "title",
+          "url",
+          "document_type",
+          "publication_time",
+          "storage_uri"
+        ],
+        "title": "DocumentOut"
+      },
+      "EntityType": {
+        "type": "string",
+        "enum": [
+          "document",
+          "claim",
+          "event",
+          "process",
+          "bottleneck",
+          "capability",
+          "asset"
+        ],
+        "title": "EntityType",
+        "description": "Node types in the economic graph.\n\nMirrors the top-level ontology chain (ontology \u00a73). Every node registered in\nthe graph declares one of these, which is what makes typed edges checkable."
+      },
+      "EventDetailOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/EventType"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "independent_source_count": {
+            "type": "integer",
+            "title": "Independent Source Count",
+            "description": "Distinct reports behind this Event after syndication collapse \u2014 not the document count (ontology \u00a747)."
+          },
+          "novelty": {
+            "type": "number",
+            "title": "Novelty"
+          },
+          "materiality": {
+            "type": "number",
+            "title": "Materiality"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "contradictions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Contradictions"
+          },
+          "propagated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Propagated At",
+            "description": "When this Event cleared the significance gate. Null means it is accumulating."
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimOut"
+            },
+            "type": "array",
+            "title": "Claims"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentOut"
+            },
+            "type": "array",
+            "title": "Documents"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "event_type",
+          "title",
+          "description",
+          "occurred_at",
+          "independent_source_count",
+          "novelty",
+          "materiality",
+          "confidence",
+          "revision"
+        ],
+        "title": "EventDetailOut"
+      },
+      "EventOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/EventType"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "independent_source_count": {
+            "type": "integer",
+            "title": "Independent Source Count",
+            "description": "Distinct reports behind this Event after syndication collapse \u2014 not the document count (ontology \u00a747)."
+          },
+          "novelty": {
+            "type": "number",
+            "title": "Novelty"
+          },
+          "materiality": {
+            "type": "number",
+            "title": "Materiality"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "contradictions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Contradictions"
+          },
+          "propagated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Propagated At",
+            "description": "When this Event cleared the significance gate. Null means it is accumulating."
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "event_type",
+          "title",
+          "description",
+          "occurred_at",
+          "independent_source_count",
+          "novelty",
+          "materiality",
+          "confidence",
+          "revision"
+        ],
+        "title": "EventOut"
+      },
+      "EventType": {
+        "type": "string",
+        "enum": [
+          "policy_announcement",
+          "policy_enactment",
+          "regulatory_action",
+          "government_funding",
+          "corporate_action",
+          "guidance_change",
+          "capex_announcement",
+          "capacity_change",
+          "supply_disruption",
+          "demand_shift",
+          "price_move",
+          "technology_milestone",
+          "macro_policy",
+          "data_release",
+          "other"
+        ],
+        "title": "EventType",
+        "description": "Ontology \u00a76. Coarse routing categories, not a taxonomy of the world."
+      },
+      "EvidenceTrailOut": {
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/NodeRef"
+          },
+          "supporting_events": {
+            "items": {
+              "$ref": "#/components/schemas/NodeRef"
+            },
+            "type": "array",
+            "title": "Supporting Events"
+          },
+          "contradicting_events": {
+            "items": {
+              "$ref": "#/components/schemas/NodeRef"
+            },
+            "type": "array",
+            "title": "Contradicting Events"
+          },
+          "claim_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Claim Ids"
+          },
+          "document_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Document Ids"
+          },
+          "is_evidenced": {
+            "type": "boolean",
+            "title": "Is Evidenced"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "subject",
+          "is_evidenced"
+        ],
+        "title": "EvidenceTrailOut",
+        "description": "A statement traced to the documents behind it (agent doc \u00a72.4)."
+      },
+      "ExposureKind": {
+        "type": "string",
+        "enum": [
+          "revenue",
+          "incremental_earnings",
+          "capacity",
+          "market_share",
+          "production_capability",
+          "strategic_positioning",
+          "geographic"
+        ],
+        "title": "ExposureKind",
+        "description": "Ontology \u00a716 'Process Exposure' \u2014 how an Asset touches the Process."
+      },
+      "ExposureOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "target": {
+            "$ref": "#/components/schemas/NodeRef"
+          },
+          "exposure_kind": {
+            "$ref": "#/components/schemas/ExposureKind"
+          },
+          "directness": {
+            "type": "string",
+            "title": "Directness"
+          },
+          "magnitude": {
+            "type": "number",
+            "title": "Magnitude"
+          },
+          "revenue_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revenue Share"
+          },
+          "quantitative_basis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantitative Basis",
+            "description": "The figure a revenue share rests on, where one was supplied."
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "target",
+          "exposure_kind",
+          "directness",
+          "magnitude",
+          "revenue_share",
+          "rationale",
+          "confidence",
+          "observed_at"
+        ],
+        "title": "ExposureOut"
+      },
+      "GraphEdgeOut": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Id"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Id"
+          },
+          "relationship_type": {
+            "$ref": "#/components/schemas/RelationshipType"
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "target_id",
+          "relationship_type",
+          "weight",
+          "confidence"
+        ],
+        "title": "GraphEdgeOut"
+      },
+      "GraphNodeOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EntityType"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "label"
+        ],
+        "title": "GraphNodeOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "database": {
+            "type": "boolean",
+            "title": "Database"
+          },
+          "schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "database"
+        ],
+        "title": "HealthOut"
+      },
+      "IntegrityReportOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
+          "violations": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrityViolationOut"
+            },
+            "type": "array",
+            "title": "Violations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ok",
+          "checked_at"
+        ],
+        "title": "IntegrityReportOut"
+      },
+      "IntegrityViolationOut": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "node_id",
+          "detail"
+        ],
+        "title": "IntegrityViolationOut"
+      },
+      "JournalEntryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "confidence_before": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Before"
+          },
+          "confidence_after": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence After"
+          },
+          "changes": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Changes"
+          },
+          "triggering_event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triggering Event Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "summary",
+          "observed_at",
+          "confidence_before",
+          "confidence_after"
+        ],
+        "title": "JournalEntryOut",
+        "description": "Why the system changed its mind (PRD \u00a721)."
+      },
+      "LogicOperator": {
+        "type": "string",
+        "enum": [
+          "and",
+          "or"
+        ],
+        "title": "LogicOperator",
+        "description": "Ontology \u00a712 \u2014 Capability requirements form logical structures."
+      },
+      "Necessity": {
+        "type": "string",
+        "enum": [
+          "required",
+          "optional"
+        ],
+        "title": "Necessity"
+      },
+      "NodeRef": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EntityType"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "label"
+        ],
+        "title": "NodeRef",
+        "description": "A pointer to any node, with enough to render it."
+      },
+      "PathStepOut": {
+        "properties": {
+          "relationship_type": {
+            "$ref": "#/components/schemas/RelationshipType"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          },
+          "to": {
+            "$ref": "#/components/schemas/NodeRef"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "relationship_type",
+          "rationale",
+          "to"
+        ],
+        "title": "PathStepOut"
+      },
+      "PipelineStageOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority"
+          },
+          "concurrency": {
+            "type": "integer",
+            "title": "Concurrency"
+          },
+          "triggered_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Triggered By"
+          },
+          "emits": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Emits"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "has_handler": {
+            "type": "boolean",
+            "title": "Has Handler"
+          },
+          "has_reconciler": {
+            "type": "boolean",
+            "title": "Has Reconciler"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "priority",
+          "concurrency",
+          "triggered_by",
+          "emits",
+          "description",
+          "has_handler",
+          "has_reconciler"
+        ],
+        "title": "PipelineStageOut"
+      },
+      "ProcessArchetype": {
+        "type": "string",
+        "enum": [
+          "infrastructure_s_curve",
+          "commodity_supply_cycle",
+          "industrial_bottleneck",
+          "regulatory_implementation",
+          "business_model_disruption"
+        ],
+        "title": "ProcessArchetype",
+        "description": "Ontology \u00a78. Each archetype has its own State machine \u2014 see\n``econiq_ontology.archetypes``."
+      },
+      "ProcessDetailOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "archetype": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessArchetype"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archetype_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archetype Confidence"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProcessStatus"
+          },
+          "requires_review": {
+            "type": "boolean",
+            "title": "Requires Review"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "current_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessStateLabel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Confidence"
+          },
+          "state_observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Observed At"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessStateOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "open_bottlenecks": {
+            "items": {
+              "$ref": "#/components/schemas/BottleneckOut"
+            },
+            "type": "array",
+            "title": "Open Bottlenecks"
+          },
+          "open_critiques": {
+            "items": {
+              "$ref": "#/components/schemas/CritiqueOut"
+            },
+            "type": "array",
+            "title": "Open Critiques"
+          },
+          "evidence_event_count": {
+            "type": "integer",
+            "title": "Evidence Event Count",
+            "default": 0
+          },
+          "contradicting_event_count": {
+            "type": "integer",
+            "title": "Contradicting Event Count",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "description",
+          "archetype",
+          "archetype_confidence",
+          "status",
+          "requires_review",
+          "revision"
+        ],
+        "title": "ProcessDetailOut"
+      },
+      "ProcessStateLabel": {
+        "type": "string",
+        "enum": [
+          "discovery",
+          "early_adoption",
+          "acceleration",
+          "infrastructure_expansion",
+          "saturation",
+          "maturity",
+          "weak_demand",
+          "demand_recovery",
+          "inventory_draw",
+          "supply_tightness",
+          "price_acceleration",
+          "supply_response",
+          "oversupply",
+          "downcycle",
+          "constraint_emerging",
+          "constraint_binding",
+          "response_mobilization",
+          "buildout",
+          "capacity_delivery",
+          "constraint_relieved",
+          "announced",
+          "enacted",
+          "rulemaking",
+          "implementation",
+          "compliance_buildout",
+          "enforcement",
+          "normalization",
+          "trigger",
+          "experimentation",
+          "behavior_shift",
+          "substitution",
+          "incumbent_response",
+          "reallocation",
+          "new_equilibrium"
+        ],
+        "title": "ProcessStateLabel",
+        "description": "Every categorical State across all Archetypes.\n\nA flat vocabulary keeps the database column typed; ``StateMachine`` enforces\nwhich labels are legal for which Archetype."
+      },
+      "ProcessStateOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "archetype": {
+            "$ref": "#/components/schemas/ProcessArchetype"
+          },
+          "categorical_state": {
+            "$ref": "#/components/schemas/ProcessStateLabel"
+          },
+          "state_confidence": {
+            "type": "number",
+            "title": "State Confidence"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/StateFeatureOut"
+            },
+            "type": "array",
+            "title": "Features"
+          },
+          "transition_beliefs": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Transition Beliefs",
+            "description": "Model belief that the Process moves next to each State. Not probabilities: uncalibrated until the calibration framework validates them (ontology \u00a735)."
+          },
+          "transition_indicators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Transition Indicators"
+          },
+          "reversal_indicators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reversal Indicators"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "archetype",
+          "categorical_state",
+          "state_confidence",
+          "observed_at",
+          "recorded_at"
+        ],
+        "title": "ProcessStateOut"
+      },
+      "ProcessStatus": {
+        "type": "string",
+        "enum": [
+          "candidate",
+          "active",
+          "dormant",
+          "invalidated",
+          "merged",
+          "concluded"
+        ],
+        "title": "ProcessStatus",
+        "description": "Lifecycle of the Process object itself, distinct from its economic\nState (ontology \u00a77 vs \u00a710)."
+      },
+      "ProcessSummaryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "archetype": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessArchetype"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archetype_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archetype Confidence"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProcessStatus"
+          },
+          "requires_review": {
+            "type": "boolean",
+            "title": "Requires Review"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "current_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessStateLabel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Confidence"
+          },
+          "state_observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Observed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "description",
+          "archetype",
+          "archetype_confidence",
+          "status",
+          "requires_review",
+          "revision"
+        ],
+        "title": "ProcessSummaryOut"
+      },
+      "QueueDepthOut": {
+        "properties": {
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending"
+          },
+          "running": {
+            "type": "integer",
+            "title": "Running"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "dead": {
+            "type": "integer",
+            "title": "Dead"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage",
+          "pending",
+          "running",
+          "failed",
+          "dead"
+        ],
+        "title": "QueueDepthOut"
+      },
+      "RelationshipType": {
+        "type": "string",
+        "enum": [
+          "influences",
+          "creates",
+          "requires",
+          "expressed_by",
+          "affects",
+          "supports",
+          "contradicts",
+          "supersedes",
+          "derived_from"
+        ],
+        "title": "RelationshipType",
+        "description": "Typed edges (ui_concept \u00a79.1).\n\nThe canonical chain is::\n\n    Process --influences--> Process\n    Process --creates--> Bottleneck\n    Bottleneck --requires--> Capability\n    Capability --expressed_by--> Asset\n\nAdditional types carry evidence and direct Event exposure (ontology \u00a715)."
+      },
+      "RequirementNodeOut": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LogicOperator"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "capability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NodeRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "necessity": {
+            "$ref": "#/components/schemas/Necessity"
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementNodeOut"
+            },
+            "type": "array",
+            "title": "Children"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "necessity",
+          "weight"
+        ],
+        "title": "RequirementNodeOut",
+        "description": "One node of a requirement tree.\n\nReturned as a tree rather than a flat list because AND and OR imply\ncompletely different sets of participants (ontology \u00a712), and flattening for\ntransport would discard the distinction the mapping agent was asked for."
+      },
+      "RequirementOut": {
+        "properties": {
+          "bottleneck_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Bottleneck Id"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "root": {
+            "$ref": "#/components/schemas/RequirementNodeOut"
+          },
+          "capability_count": {
+            "type": "integer",
+            "title": "Capability Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bottleneck_id",
+          "revision",
+          "root",
+          "capability_count"
+        ],
+        "title": "RequirementOut"
+      },
+      "ScoreDimensionOut": {
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "title": "Dimension"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "inputs": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Inputs",
+            "description": "What the value was computed from."
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dimension",
+          "value",
+          "confidence",
+          "method"
+        ],
+        "title": "ScoreDimensionOut"
+      },
+      "ScoreFamily": {
+        "type": "string",
+        "enum": [
+          "thesis_quality",
+          "asset_quality",
+          "trade_quality"
+        ],
+        "title": "ScoreFamily",
+        "description": "Ontology \u00a717. These three are never collapsed into one number, anywhere.\n\nTrade quality is V2 and is present only so that stored scores can never be\nmislabelled; nothing in V1 produces it."
+      },
+      "ScorecardOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "subject": {
+            "$ref": "#/components/schemas/NodeRef"
+          },
+          "family": {
+            "$ref": "#/components/schemas/ScoreFamily"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "composite": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Composite"
+          },
+          "composite_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Composite Method"
+          },
+          "dimensions": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreDimensionOut"
+            },
+            "type": "array",
+            "title": "Dimensions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "subject",
+          "family",
+          "observed_at",
+          "composite",
+          "composite_method"
+        ],
+        "title": "ScorecardOut",
+        "description": "One family, never a blend.\n\nThesis, Asset and Trade quality are separate by construction (ontology \u00a717),\nand there is deliberately no endpoint that combines them."
+      },
+      "StateFeatureOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "basis": {
+            "type": "string",
+            "title": "Basis",
+            "description": "'measured' or 'estimated' \u2014 whether code computed it or an agent judged it."
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "value",
+          "basis"
+        ],
+        "title": "StateFeatureOut"
+      },
+      "SubgraphOut": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNodeOut"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEdgeOut"
+            },
+            "type": "array",
+            "title": "Edges"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SubgraphOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

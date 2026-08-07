@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens (ui_concept §28-29).
+ *
+ * Semantic names, not colour names: `--confidence-low` rather than `--amber`.
+ * This surface spends most of its pixels expressing uncertainty, evidence
+ * strength and direction of change, and a token called `--amber-500` invites
+ * the next person to use amber for something that is not a confidence level.
+ *
+ * Dark is the default. This is a terminal that people read for hours against
+ * dense text and charts, and §27 makes it desktop-first for the same reason.
+ */
+
+@theme {
+  --color-canvas: oklch(0.16 0.008 260);
+  --color-surface: oklch(0.2 0.009 260);
+  --color-surface-raised: oklch(0.245 0.01 260);
+  --color-border: oklch(0.3 0.012 260);
+  --color-border-strong: oklch(0.4 0.014 260);
+
+  --color-ink: oklch(0.95 0.004 260);
+  --color-ink-muted: oklch(0.72 0.008 260);
+  --color-ink-subtle: oklch(0.58 0.01 260);
+
+  --color-accent: oklch(0.7 0.13 215);
+  --color-accent-muted: oklch(0.45 0.08 215);
+
+  /* Evidence direction. Supporting and contradicting evidence are both first
+     class (ontology §17) — contradiction is a scored dimension, not a warning,
+     so it gets a colour rather than a red flag. */
+  --color-supports: oklch(0.72 0.13 155);
+  --color-contradicts: oklch(0.68 0.15 25);
+
+  /* Confidence bands. Deliberately three, not a gradient: these are model
+     beliefs and not calibrated probabilities (ontology §35), and a smooth
+     colour ramp would imply a precision the numbers do not have. */
+  --color-confidence-high: oklch(0.72 0.13 155);
+  --color-confidence-medium: oklch(0.78 0.13 85);
+  --color-confidence-low: oklch(0.68 0.15 25);
+
+  /* Anything the system inferred rather than measured, and anything awaiting
+     human review, is marked. §2.2: every important conclusion is inspectable. */
+  --color-estimated: oklch(0.7 0.1 300);
+  --color-needs-review: oklch(0.78 0.13 85);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-panel: 0.5rem;
+}
+
+/* Light mode is a re-mapping of the same semantic tokens, never a second set of
+   names. A component that reads `--color-surface` works in both without knowing
+   which is active. */
+:root[data-theme="light"] {
+  --color-canvas: oklch(0.99 0.002 260);
+  --color-surface: oklch(0.97 0.003 260);
+  --color-surface-raised: oklch(1 0 0);
+  --color-border: oklch(0.9 0.005 260);
+  --color-border-strong: oklch(0.8 0.008 260);
+
+  --color-ink: oklch(0.22 0.01 260);
+  --color-ink-muted: oklch(0.45 0.012 260);
+  --color-ink-subtle: oklch(0.58 0.012 260);
+
+  --color-accent: oklch(0.55 0.14 215);
+  --color-accent-muted: oklch(0.75 0.07 215);
+
+  --color-supports: oklch(0.55 0.14 155);
+  --color-contradicts: oklch(0.55 0.18 25);
+  --color-confidence-high: oklch(0.55 0.14 155);
+  --color-confidence-medium: oklch(0.65 0.14 75);
+  --color-confidence-low: oklch(0.55 0.18 25);
+  --color-estimated: oklch(0.5 0.13 300);
+  --color-needs-review: oklch(0.62 0.14 75);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  html[data-theme="light"] {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    /* Dense tabular data reads badly with proportional figures. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}

@@ -27,7 +27,9 @@ jobs:
       - name: Format check
         run: uv run ruff format --check .
       - name: Type-check
-        run: uv run mypy packages
+        # packages, services and apps — not just packages. The contract lives in
+        # packages, but the code that can break it does not.
+        run: uv run mypy packages services apps
       - name: Unit tests
         run: uv run pytest -q -m "not integration"
 
@@ -55,6 +57,56 @@ jobs:
       - run: uv sync --all-extras
       - name: Migration round-trip
         run: uv run pytest -q -m integration
+
+  web:
+    name: terminal
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type-check
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm run test
+      - name: Build
+        run: npm run build
+
+  api-types:
+    name: API types match the API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: uv sync --all-extras
+      # The terminal's types are generated from the OpenAPI document. A route
+      # renamed without regenerating them compiles fine and fails at runtime,
+      # which is the whole failure mode generating them was meant to remove.
+      - name: Regenerate and diff
+        run: |
+          uv run python -c "
+          import json, pathlib
+          from econiq_api.main import create_app
+          pathlib.Path('apps/web/openapi.json').write_text(
+              json.dumps(create_app().openapi(), indent=2) + '\n'
+          )"
+          cd apps/web && npx --yes openapi-typescript openapi.json -o src/lib/api/schema.d.ts
+          cd ../.. && git diff --exit-code apps/web/openapi.json apps/web/src/lib/api/schema.d.ts \
+            || (echo "::error::openapi.json / schema.d.ts are stale — run 'npm run api:types' in apps/web" && exit 1)
 
   containers:
     name: container builds

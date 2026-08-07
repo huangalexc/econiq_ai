@@ -676,3 +676,36 @@ async def test_filters_narrow_the_lists(client, graph):
     assert (
         len((await client.get("/api/assets", params={"asset_class": "common_stock"})).json()) == 0
     )
+
+
+async def test_the_terminal_can_reach_the_api_from_a_browser(client):
+    """CORS, which only fails in a browser and so fails no other test.
+
+    The terminal (#18) runs on its own origin in development. Without the
+    preflight answer every request from it is blocked, and the failure surfaces
+    in a devtools console rather than in CI.
+    """
+    response = await client.options(
+        "/api/processes",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+
+
+async def test_an_unknown_origin_is_not_allowed(client):
+    """An allowlist that was permissive before authentication (#19) existed is
+    one nobody tightens afterwards."""
+    response = await client.options(
+        "/api/processes",
+        headers={
+            "Origin": "https://not-the-terminal.example",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert "access-control-allow-origin" not in response.headers

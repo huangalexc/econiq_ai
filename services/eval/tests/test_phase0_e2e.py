@@ -104,33 +104,35 @@ async def test_phase_zero_is_evaluated_against_prd_section_28(corpus_run, sessio
     by_number = {c.number: c for c in report.criteria}
     assert len(by_number) == 11
 
-    # The eight the pipeline is supposed to deliver.
+    # The nine the Phase 0 pipeline is supposed to deliver.
     for number in (1, 2, 3, 4, 5, 6, 8, 9, 10):
         assert by_number[number].met, (
             f"§28.{number} {by_number[number].name}: {by_number[number].detail}"
         )
 
-    # Criterion 11 is Phase 2 work and is deferred rather than failed.
+    # Two are assigned to later phases and are deferred rather than failed.
+    assert by_number[7].deferred_to == "Phase 1 (#29, agent doc §8.3-8.4)"
     assert by_number[11].deferred_to is not None
-    assert by_number[11].status == "deferred"
+    assert {c.number for c in report.in_scope} == {1, 2, 3, 4, 5, 6, 8, 9, 10}
+    assert report.passed
 
 
-async def test_asset_comparison_is_the_one_criterion_phase_zero_does_not_reach(
-    corpus_run, session_factory
-):
-    """§28.7 needs the Asset Quant and Asset Quality agents (agent doc §8.3-8.4).
+async def test_a_deferred_criterion_still_reports_what_it_measured(corpus_run, session_factory):
+    """§28.7 was reassigned to Phase 1 (#73). The check did not stop running.
 
-    Phase 0's issue list stops at "basic Asset discovery & exposure mapping"
-    (#12), so nothing writes an asset_quality scorecard. This is a real gap
-    between PRD §28 and phases.txt, and the gate reports it rather than
-    quietly redefining the criterion as met.
+    A deferral that also stopped measuring would go stale silently: the Asset
+    Quant agent could land in Phase 1 and this line would still say nothing.
+    `met` stays false because it is false, and only the verdict is suspended.
     """
     report = await evaluate_phase0(session_factory, provider=PROVIDER_NAME)
     criterion = next(c for c in report.criteria if c.number == 7)
 
-    assert criterion.met is False
-    assert criterion.deferred_to is None, "not deferred — it is genuinely unmet"
-    assert report.passed is False
+    assert criterion.status == "deferred"
+    assert criterion.met is False, "the measurement is unchanged by the deferral"
+    assert "0 Asset scorecard(s)" in criterion.detail
+    # Deferred criteria neither pass nor fail the gate.
+    assert criterion not in report.in_scope
+    assert report.passed
 
 
 async def test_the_report_states_what_a_scripted_run_does_not_establish(

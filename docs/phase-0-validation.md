@@ -41,9 +41,9 @@ larger than Phase 0 has. The report below names the provider for that reason.
 
 ## PRD §28 success criteria
 
-**FAIL** — 9/10 in-scope criteria met, 1 deferred.
+**PASS** — 9/9 in-scope criteria met, 2 deferred.
 
-Graph produced by the `scripted` provider at 2026-08-07T17:21:49+00:00.
+Graph produced by the `scripted` provider at 2026-08-07T17:34:57+00:00.
 
 | # | Criterion | Status | Evidence |
 |---|---|---|---|
@@ -53,7 +53,7 @@ Graph produced by the `scripted` provider at 2026-08-07T17:21:49+00:00.
 | 4 | Identify important Bottlenecks | met | 1 open Bottleneck(s), 1 currently binding |
 | 5 | Translate Bottlenecks into Capabilities | met | 1 Bottleneck(s) carry a requirement tree over 2 Capability node(s) |
 | 6 | Identify multiple Asset expressions | met | 2 Asset(s); 1 of 1 Capability/ies have more than one Asset expressing them |
-| 7 | Quantitatively compare Assets | NOT MET | 0 Asset scorecard(s), 0 decomposed into dimensions; comparison needs at least two |
+| 7 | Quantitatively compare Assets | deferred | 0 Asset scorecard(s), 0 decomposed into dimensions; comparison needs at least two. Nothing in Phase 0 writes an asset_quality scorecard — the Asset Quant and Asset Quality agents ship with the comparison matrix. |
 | 8 | Preserve evidence provenance | met | 4/4 Claim(s) carry verified document offsets across 3 document(s); 0 Event(s) without Claims |
 | 9 | Construct an inspectable investment case | met | 1/1 Process(es) reach an Asset by traversal through the Bottleneck and Capability layers |
 | 10 | Monitor changes to the thesis over time | met | 4 journal entr(ies); 0 Process(es) with more than one State observation; 2 superseded Process revision(s) |
@@ -61,17 +61,14 @@ Graph produced by the `scripted` provider at 2026-08-07T17:21:49+00:00.
 
 ## Deferred
 
+- **Quantitatively compare Assets** → Phase 1 (#29, agent doc §8.3-8.4). 0 Asset scorecard(s), 0 decomposed into dimensions; comparison needs at least two. Nothing in Phase 0 writes an asset_quality scorecard — the Asset Quant and Asset Quality agents ship with the comparison matrix.
 - **Learn from historical outcomes** → Phase 2 (#35-#46). No historical State-conditioned episodes, analog retrieval or realised outcomes exist yet. This is agent doc §17's Level 3-4, which the doc is explicit must not be optimised for before Levels 1-2 are validated.
-
-## Not met
-
-- **Quantitatively compare Assets** — 0 Asset scorecard(s), 0 decomposed into dimensions; comparison needs at least two
 
 ## Notes on what this does and does not establish
 
 - These criteria are satisfied by rows and edges in the graph, not by the presence of the agents that write them. Every check reads the database.
 - Passing establishes that a document stream became a coherent, connected, provenanced Process graph. It does not establish that the Process is the right one — that is what the labelled benchmarks measure, and they require a real model provider and a larger dataset than Phase 0 has.
-- Criterion 11 is deferred rather than failed. Counting it against the gate would make Phase 0 unpassable by design, since phases.txt places the historical engine in Phase 2.
+- Two criteria are deferred rather than failed, because phases.txt assigns the work elsewhere: §28.7 to Phase 1 (#29, with the Asset Quant and Asset Quality agents) and §28.11 to Phase 2 (#35-#46, the historical engine). A deferral suppresses the verdict, not the measurement — both checks still run and still report what they found, so the day the work lands the report says so without anyone editing it.
 ---
 
 ## Integrity audit
@@ -104,24 +101,28 @@ Not injectable in Phase 0:
 
 ---
 
-## The one criterion Phase 0 does not reach
+## Scope: §28.7 was reassigned to Phase 1
 
-**§28.7, "Quantitatively compare Assets", is not met**, and it is not deferred
-either — deferring it would be a judgement this gate has no standing to make.
+The gate originally reported §28.7, "Quantitatively compare Assets", as **not
+met**. It surfaced a scope gap rather than a defect: PRD §28 lists Asset
+comparison among the eleven MVP criteria, but `phases.txt` stops Phase 0 at
+*basic* Asset discovery and exposure mapping (#12), and the Asset Quant Agent
+and Asset Quality Agent (agent doc §8.3, §8.4) appear in no Phase 0 issue. The
+`ScorecardWriter`, the `score_dimensions` decomposition and the ontology §17
+family separation all exist and are exercised by the Process Critic, which
+writes Thesis Quality. What is absent is the agent that would write Asset
+Quality.
 
-The cause is a scope gap rather than a defect. PRD §28 lists Asset comparison
-among the eleven MVP criteria, but `phases.txt` stops Phase 0 at *basic* Asset
-discovery and exposure mapping (#12). The Asset Quant Agent and Asset Quality
-Agent (agent doc §8.3, §8.4) are not in the Phase 0 issue list, so nothing
-writes an `asset_quality` scorecard, so there is nothing to compare. The
-`ScorecardWriter` and the score-family separation exist and are exercised by the
-Process Critic, which writes Thesis Quality — the machinery is there; the agent
-that would use it for Assets is not.
+**Decision (2026-08-07, issue #73): §28.7 moves to Phase 1**, alongside the
+Asset comparison matrix (#29), which is where the comparison surfaces anyway.
+Phase 0's gate is therefore 9 of 9 in-scope criteria.
 
-This is the second discrepancy of its kind found between the agent doc's
-recommended MVP and the phase sequencing; the engineering handoff records the
-first (the Research Quality Auditor deferred to Phases 2-3, with #16's harness
-as the interim safety net). It should be resolved deliberately: either the Asset
-Quant/Quality agents move into Phase 0, or §28.7 is formally reassigned to
-Phase 1 alongside the Asset comparison matrix (#29). Until then the gate reports
-9 of 10 in-scope criteria met and says why the tenth is not.
+The check was not deleted. It still runs and still reports what it found — a
+deferral suspends the verdict, not the measurement. The day something writes an
+`asset_quality` scorecard, this line starts saying so without anyone editing it.
+
+This was the second discrepancy of its kind between the agent doc's recommended
+MVP (§24) and the phase sequencing; `ENGINEERING_HANDOFF.md` records the first
+(the Research Quality Auditor deferred to Phases 2-3, with #16's harness as the
+interim safety net). Both are sequencing decisions, not omissions, and both are
+now written down where the gate can see them.

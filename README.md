@@ -18,9 +18,9 @@ map.
 
 ## Status
 
-Phase 0 complete — issues **#1–#17**. The gate (#17) reports **9 of 10 in-scope
-PRD §28 criteria met**; see [docs/phase-0-validation.md](docs/phase-0-validation.md)
-for the tenth and issue #73 for its resolution.
+Phase 0 complete — issues **#1–#17**. The gate (#17) passes **9 of 9 in-scope
+PRD §28 criteria**, with §28.7 reassigned to Phase 1 (#29) and §28.11 to Phase 2.
+See [docs/phase-0-validation.md](docs/phase-0-validation.md).
 
 | Issue | Delivered |
 |---|---|
@@ -46,11 +46,12 @@ The full chain — document to instrument — runs as a staged, triggered pipeli
 is readable over HTTP at any point in its history, and is measured by a harness
 that injects known faults to check its own integrity checks still fire.
 
-One gap the gate surfaced rather than smoothed over: nothing in Phase 0 writes an
-`asset_quality` scorecard, so PRD §28.7 ("quantitatively compare Assets") is
-unmet. The Asset Quant and Asset Quality agents (agent doc §8.3–8.4) are in
-neither Phase 0's nor Phase 1's issue list — a scope gap between the PRD and
-`phases.txt`, tracked in #73.
+The gate surfaced one scope gap rather than smoothing it over: nothing in Phase 0
+writes an `asset_quality` scorecard, because the Asset Quant and Asset Quality
+agents (agent doc §8.3–8.4) were in no phase's issue list. PRD §28.7 has been
+reassigned to Phase 1 alongside the Asset comparison matrix (#29). The check
+still runs and still reports what it finds — a deferral suspends the verdict,
+not the measurement.
 
 ## Quick start
 

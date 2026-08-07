@@ -306,6 +306,15 @@ class Phase0Evaluation:
         Ontology §17 keeps the families apart, so this looks for Asset Quality
         specifically rather than for any score: comparing Assets on a blended
         number would be the exact failure the family separation exists to stop.
+
+        **Reassigned to Phase 1 (#29) by decision on 2026-08-07** (issue #73).
+        PRD §28 lists Asset comparison among the MVP criteria, but `phases.txt`
+        stops Phase 0 at basic Asset discovery and exposure mapping (#12) and
+        the Asset Quant and Asset Quality agents (agent doc §8.3, §8.4) belong
+        with the Asset comparison matrix. The check still runs and still reports
+        what it found — a deferral suppresses the verdict, not the measurement,
+        so the day something does write an asset_quality scorecard this line
+        starts saying so.
         """
         rows = (
             await session.execute(
@@ -326,8 +335,11 @@ class Phase0Evaluation:
             met=len(decomposed) > 1,
             detail=(
                 f"{len(asset_scores)} Asset scorecard(s), {len(decomposed)} decomposed "
-                f"into dimensions; comparison needs at least two"
+                f"into dimensions; comparison needs at least two. Nothing in Phase 0 "
+                f"writes an asset_quality scorecard — the Asset Quant and Asset "
+                f"Quality agents ship with the comparison matrix."
             ),
+            deferred_to="Phase 1 (#29, agent doc §8.3-8.4)",
         )
 
     # 8 ---------------------------------------------------------------- #
@@ -496,9 +508,12 @@ STANDING_NOTES = (
     "provenanced Process graph. It does not establish that the Process is the "
     "right one — that is what the labelled benchmarks measure, and they require "
     "a real model provider and a larger dataset than Phase 0 has.",
-    "Criterion 11 is deferred rather than failed. Counting it against the gate "
-    "would make Phase 0 unpassable by design, since phases.txt places the "
-    "historical engine in Phase 2.",
+    "Two criteria are deferred rather than failed, because phases.txt assigns "
+    "the work elsewhere: §28.7 to Phase 1 (#29, with the Asset Quant and Asset "
+    "Quality agents) and §28.11 to Phase 2 (#35-#46, the historical engine). "
+    "A deferral suppresses the verdict, not the measurement — both checks still "
+    "run and still report what they found, so the day the work lands the report "
+    "says so without anyone editing it.",
 )
 
 

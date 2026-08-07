@@ -11,6 +11,7 @@ dependencies = [
     "econiq-ingestion",
     "econiq-agents",
     "econiq-graph",
+    "econiq-orchestration",
 ]
 
 [dependency-groups]
@@ -34,6 +35,7 @@ members = [
     "services/ingestion",
     "services/agents",
     "services/graph",
+    "services/orchestration",
 ]
 
 [tool.uv.sources]
@@ -44,6 +46,7 @@ econiq-llm = { workspace = true }
 econiq-ingestion = { workspace = true }
 econiq-agents = { workspace = true }
 econiq-graph = { workspace = true }
+econiq-orchestration = { workspace = true }
 
 [tool.ruff]
 line-length = 100
@@ -84,6 +87,7 @@ mypy_path = [
     "services/ingestion/src",
     "services/agents/src",
     "services/graph/src",
+    "services/orchestration/src",
 ]
 explicit_package_bases = true
 disallow_untyped_decorators = false

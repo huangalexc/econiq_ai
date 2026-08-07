@@ -51,6 +51,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -1035,4 +1036,103 @@ class Critique(Base, ObservationMixin):
     __table_args__ = (
         Index("ix_critiques_subject_status", "subject_id", "status", "observed_at"),
         CheckConstraint("severity >= 0 AND severity <= 10", name="severity_range"),
+    )
+
+
+class OutboxEvent(Base, TimestampMixin):
+    """A typed domain event, written in the same transaction as the state change.
+
+    The transactional outbox pattern (tech rec §11). Writing to a queue and to
+    Postgres in two operations means one can succeed while the other fails, and
+    the resulting gap is invisible — either an Event that nothing acts on, or
+    work scheduled for a state change that rolled back. Here the event is a row
+    in the same commit, and a dispatcher moves it outward afterwards.
+    """
+
+    __tablename__ = "outbox_events"
+
+    outbox_event_id: Mapped[uuid.UUID] = uuid_pk()
+    event_name: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    subject_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), nullable=True, index=True
+    )
+    subject_type: Mapped[EntityType | None] = mapped_column(e.ENTITY_TYPE, nullable=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        comment="When the state change happened, not when it was dispatched.",
+    )
+    status: Mapped[e.OutboxStatus] = mapped_column(e.OUTBOX_STATUS, nullable=False, index=True)
+    dispatched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (Index("ix_outbox_pending", "status", "occurred_at"),)
+
+
+class WorkItem(Base, TimestampMixin):
+    """One unit of scheduled work.
+
+    Postgres is the queue. ``SELECT … FOR UPDATE SKIP LOCKED`` gives safe
+    concurrent claiming without a broker, and at the volumes this system will
+    see — a few thousand agent calls a day — the orchestration is nowhere near
+    the bottleneck. The LLM spend is. See ``docs/orchestration.md``.
+
+    ``idempotency_key`` is what makes the queue safe to double-write: the event
+    path and the reconciler both enqueue, and the unique index means the second
+    one is a no-op rather than a duplicate agent run.
+    """
+
+    __tablename__ = "work_items"
+
+    work_item_id: Mapped[uuid.UUID] = uuid_pk()
+    stage: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    subject_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), nullable=True, index=True
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(200), nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    status: Mapped[e.WorkStatus] = mapped_column(e.WORK_STATUS, nullable=False, index=True)
+    priority: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=100,
+        comment="Lower runs first. Live material events outrank backfill.",
+    )
+    run_after: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        comment="Backoff and time-based triggers both express themselves here.",
+    )
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    claimed_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    trigger: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        comment="event | reconciler | schedule | manual — how this was enqueued.",
+    )
+    source_event_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("outbox_events.outbox_event_id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    __table_args__ = (
+        # Only one *open* unit of work per key. Completed ones stay for audit,
+        # so re-running a stage later is still possible.
+        Index(
+            "uq_work_items_open_key",
+            "idempotency_key",
+            unique=True,
+            postgresql_where=text("status IN ('pending', 'running')"),
+        ),
+        Index("ix_work_items_claimable", "status", "priority", "run_after"),
+        CheckConstraint("attempts >= 0", name="attempts_non_negative"),
+        CheckConstraint("max_attempts >= 1", name="max_attempts_positive"),
     )

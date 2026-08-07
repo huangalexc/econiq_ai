@@ -18,7 +18,7 @@ map.
 
 ## Status
 
-Phase 0 in progress — issues **#1–#13** of the 17-issue Phase 0 plan.
+Phase 0 in progress — issues **#1–#14** of the 17-issue Phase 0 plan.
 
 | Issue | Delivered |
 |---|---|
@@ -35,10 +35,11 @@ Phase 0 in progress — issues **#1–#13** of the 17-issue Phase 0 plan.
 | #11 Bottleneck & Capability | binding constraints, AND/OR/optional requirement trees that round-trip through Postgres, shared Capability nodes |
 | #12 Asset discovery & exposure | equities, commodities, currencies and indices; deterministic resolution; append-only exposure observations |
 | #13 Graph traversal & integrity | cycle-safe point-in-time traversal in Postgres, plus the structural checks Postgres cannot express |
+| #14 Staged orchestration | transactional outbox, Postgres work queue, and a reconciler that makes a dropped event a latency problem |
 
-Issues **#14–#17** (orchestration, API, eval harness, end-to-end validation)
-are not started. Issue #17 is the phase gate. The full agent chain — document
-to instrument — now runs, and the graph it builds is queryable.
+Issues **#15–#17** (API, eval harness, end-to-end validation) are not started.
+Issue #17 is the phase gate. The full chain — document to instrument — now runs
+as a staged, triggered pipeline rather than a synchronous cascade.
 
 ## Quick start
 
@@ -65,6 +66,7 @@ services/
   ingestion/   document acquisition, storage, parsing (#5)
   agents/      agent implementations over packages/llm (#6 onward)
   graph/       traversal and integrity over the ontology (#13)
+  orchestration/ staged triggers, work queue, reconciler (#14)
   quant, historical, alerts — later phases
 packages/
   ontology/    Pydantic ontology — Document…Asset, archetype State machines
@@ -146,6 +148,16 @@ contract everything downstream depends on:
   graph (agent doc §23), so discovery creates them as `candidate` with
   `requires_review` set and journals the request. Phase 0 has no reviewer, and
   blocking on one nobody has assigned would just stop the pipeline.
+- **Postgres is the queue; Temporal waits for a reason.** Every stage already
+  derives its pending work from ontology state, so there is no in-flight
+  workflow state Temporal would be protecting — adopting it now would mean a
+  second durable copy of "where has this document got to".
+  [`docs/orchestration.md`](docs/orchestration.md) records the volume maths and
+  names the real trigger: human-in-the-loop waits measured in days, which
+  arrives with Phase 1's review queue rather than with document count.
+- **The reconciler is the authority; the event path is the accelerator.** A
+  dropped domain event costs latency, never correctness — which is the property
+  that makes running without a broker defensible.
 - **Postgres is the graph; Neo4j stays a projection.** The multi-hop query
   tech rec §6 uses to argue for a graph database is a recursive CTE. What has to
   be measured before that changes is written down in

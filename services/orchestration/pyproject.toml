@@ -1,0 +1,28 @@
+[project]
+name = "econiq-orchestration"
+version = "0.1.0"
+description = "Staged, triggered updates over the ontology pipeline"
+requires-python = ">=3.12"
+dependencies = [
+    "econiq-ontology",
+    "econiq-data-models",
+    "econiq-llm",
+    "econiq-agents",
+    "econiq-ingestion",
+    "econiq-graph",
+]
+
+[tool.uv.sources]
+econiq-ontology = { workspace = true }
+econiq-data-models = { workspace = true }
+econiq-llm = { workspace = true }
+econiq-agents = { workspace = true }
+econiq-ingestion = { workspace = true }
+econiq-graph = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/econiq_orchestration"]

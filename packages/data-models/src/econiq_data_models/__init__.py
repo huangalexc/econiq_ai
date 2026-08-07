@@ -10,8 +10,10 @@ from econiq_data_models.enums import (
     AgentRunStatus,
     EmbeddingKind,
     JournalEntryKind,
+    OutboxStatus,
     RequirementNodeKind,
     ValueBasis,
+    WorkStatus,
 )
 from econiq_data_models.models import (
     AgentRun,
@@ -32,6 +34,7 @@ from econiq_data_models.models import (
     JournalEntry,
     ModelVersion,
     Node,
+    OutboxEvent,
     Process,
     ProcessState,
     ProcessStateFeature,
@@ -41,6 +44,7 @@ from econiq_data_models.models import (
     RequirementNode,
     Scorecard,
     ScoreDimension,
+    WorkItem,
 )
 from econiq_data_models.session import (
     DatabaseSettings,
@@ -74,6 +78,8 @@ __all__ = [
     "JournalEntryKind",
     "ModelVersion",
     "Node",
+    "OutboxEvent",
+    "OutboxStatus",
     "Process",
     "ProcessState",
     "ProcessStateFeature",
@@ -85,6 +91,8 @@ __all__ = [
     "ScoreDimension",
     "Scorecard",
     "ValueBasis",
+    "WorkItem",
+    "WorkStatus",
     "create_engine",
     "create_session_factory",
     "session_scope",

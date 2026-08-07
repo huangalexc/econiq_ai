@@ -71,6 +71,27 @@ class JournalEntryKind(StrEnum):
     INVALIDATED = "invalidated"
 
 
+class WorkStatus(StrEnum):
+    """Lifecycle of a queued unit of work."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    """Retryable; will be picked up again after its backoff."""
+
+    DEAD = "dead"
+    """Retries exhausted. Kept for inspection, never silently dropped."""
+
+    SUPERSEDED = "superseded"
+    """A newer identical unit of work made this one redundant."""
+
+
+class OutboxStatus(StrEnum):
+    PENDING = "pending"
+    DISPATCHED = "dispatched"
+
+
 class EmbeddingKind(StrEnum):
     DOCUMENT_BODY = "document_body"
     CLAIM_TEXT = "claim_text"
@@ -115,3 +136,5 @@ VALUE_BASIS = pg_enum(ValueBasis, "value_basis")
 JOURNAL_ENTRY_KIND = pg_enum(JournalEntryKind, "journal_entry_kind")
 CRITIQUE_KIND = pg_enum(CritiqueKind, "critique_kind")
 CRITIQUE_STATUS = pg_enum(CritiqueStatus, "critique_status")
+WORK_STATUS = pg_enum(WorkStatus, "work_status")
+OUTBOX_STATUS = pg_enum(OutboxStatus, "outbox_status")

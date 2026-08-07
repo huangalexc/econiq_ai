@@ -18,7 +18,7 @@ map.
 
 ## Status
 
-Phase 0 in progress — issues **#1–#11** of the 17-issue Phase 0 plan.
+Phase 0 in progress — issues **#1–#12** of the 17-issue Phase 0 plan.
 
 | Issue | Delivered |
 |---|---|
@@ -33,9 +33,11 @@ Phase 0 in progress — issues **#1–#11** of the 17-issue Phase 0 plan.
 | #9 Archetype & State | classification, then State estimation constrained by the archetype's machine, with append-only State history |
 | #10 Process Critic | adversarial falsification with no route to rescue the thesis, stored as durable findings |
 | #11 Bottleneck & Capability | binding constraints, AND/OR/optional requirement trees that round-trip through Postgres, shared Capability nodes |
+| #12 Asset discovery & exposure | equities, commodities, currencies and indices; deterministic resolution; append-only exposure observations |
 
-Issues **#12–#17** (Asset discovery, graph traversal, orchestration, API, eval
-harness, end-to-end validation) are not started. Issue #17 is the phase gate.
+Issues **#13–#17** (graph traversal, orchestration, API, eval harness,
+end-to-end validation) are not started. Issue #17 is the phase gate. The full
+agent chain — document to instrument — now runs.
 
 ## Quick start
 
@@ -142,6 +144,20 @@ contract everything downstream depends on:
   graph (agent doc §23), so discovery creates them as `candidate` with
   `requires_review` set and journals the request. Phase 0 has no reviewer, and
   blocking on one nobody has assigned would just stop the pipeline.
+- **The Asset layer is not equity-only.** Commodities, currencies, bonds and
+  indices are first-class: a copper shortage is expressed by copper more
+  directly than by any one miner, whose costs, hedging, jurisdiction and balance
+  sheet all sit between the thesis and the outcome. `reference_universe` gives
+  commodities and currencies deterministic resolution — a small closed set is
+  the *easiest* class to resolve, not the hardest — and an equity-only answer on
+  a commodity cycle raises an advisory.
+- **Advisory checks record without refusing.** `EvaluationCheck.blocking=False`
+  exists for findings worth surfacing that should not discard the work — an
+  equity-only Asset universe is a real signal, but throwing away the equities
+  the agent did find would leave the graph emptier rather than better.
+- **An unresolvable Asset candidate is kept, not invented.** No security master
+  exists until #47, so an equity with no usable ticker stays a Candidate. The
+  resolution rate is a discovery-quality metric.
 - **Only the binding Bottleneck is mapped.** Mapping a constraint that will
   not bite for three years produces a Capability set — and eventually an Asset
   universe — for a problem nobody has yet.

@@ -5,6 +5,23 @@ stopping at their ontology layer. Everything they produce carries the agent run
 that produced it.
 """
 
+from econiq_agents.asset_agents import (
+    AssetDiscoveryAgent,
+    AssetExposureAgent,
+    InstrumentBreadthEvaluator,
+    NoRankingEvaluator,
+    QuantitativeBasisEvaluator,
+    material_candidates,
+)
+from econiq_agents.asset_persistence import (
+    AssetResolution,
+    AssetWriter,
+    ExposureWriter,
+    PersistedExposures,
+    ResolvedAsset,
+    resolution_rate,
+)
+from econiq_agents.asset_stage import AssetDiscoveryStage, AssetOutcome
 from econiq_agents.capability_agents import (
     BindingClarityEvaluator,
     BottleneckIdentificationAgent,
@@ -92,6 +109,8 @@ from econiq_agents.process_agents import (
 from econiq_agents.process_persistence import AppliedUpdate, PersistedProcess, ProcessWriter
 from econiq_agents.process_stage import ProcessDiscoveryStage, ProcessOutcome
 from econiq_agents.prompts import (
+    ASSET_DISCOVERY_V1,
+    ASSET_EXPOSURE_V1,
     BOTTLENECK_IDENTIFICATION_V1,
     CAPABILITY_CONFLUENCE_V1,
     CAPABILITY_MAPPING_V1,
@@ -103,6 +122,14 @@ from econiq_agents.prompts import (
     PROCESS_DISCOVERY_V1,
     PROCESS_STATE_V1,
     PROCESS_UPDATE_V1,
+)
+from econiq_agents.reference_universe import (
+    COMMODITIES,
+    CURRENCIES,
+    REFERENCE_UNIVERSE,
+    ReferenceInstrument,
+    lookup,
+    resolvable_names,
 )
 from econiq_agents.scoring import ScorecardWriter, ScoringError
 from econiq_agents.state_agents import (
@@ -117,10 +144,14 @@ from econiq_agents.state_persistence import AppliedArchetype, RecordedState, Sta
 from econiq_agents.state_stage import ProcessStateStage, StateOutcome
 
 __all__ = [
+    "ASSET_DISCOVERY_V1",
+    "ASSET_EXPOSURE_V1",
     "BOTTLENECK_IDENTIFICATION_V1",
     "CAPABILITY_CONFLUENCE_V1",
     "CAPABILITY_MAPPING_V1",
     "CLAIM_EXTRACTION_V1",
+    "COMMODITIES",
+    "CURRENCIES",
     "DOCUMENT_CLASSIFIER_V1",
     "EVENT_RESOLUTION_V1",
     "EVENT_SIGNIFICANCE_V1",
@@ -128,9 +159,16 @@ __all__ = [
     "PROCESS_DISCOVERY_V1",
     "PROCESS_STATE_V1",
     "PROCESS_UPDATE_V1",
+    "REFERENCE_UNIVERSE",
     "AgentRunRecorder",
     "AppliedArchetype",
     "AppliedUpdate",
+    "AssetDiscoveryAgent",
+    "AssetDiscoveryStage",
+    "AssetExposureAgent",
+    "AssetOutcome",
+    "AssetResolution",
+    "AssetWriter",
     "BindingClarityEvaluator",
     "BottleneckIdentificationAgent",
     "BottleneckWriter",
@@ -156,18 +194,22 @@ __all__ = [
     "EventResolutionStage",
     "EventSignificanceAgent",
     "EventWriter",
+    "ExposureWriter",
     "ExtractionOutcome",
     "GraphWriter",
     "HashingEmbedder",
     "IllegalEdgeError",
     "Independence",
     "IndependenceAssessment",
+    "InstrumentBreadthEvaluator",
     "LayerBoundaryEvaluator",
     "MeasuredFeatureEvaluator",
     "MostDamagingEvaluator",
+    "NoRankingEvaluator",
     "NoRescueEvaluator",
     "PersistedBottleneck",
     "PersistedEvent",
+    "PersistedExposures",
     "PersistedProcess",
     "PersistedRequirement",
     "ProcessArchetypeAgent",
@@ -182,9 +224,12 @@ __all__ = [
     "ProcessWriter",
     "PropagationDecision",
     "PropagationPolicy",
+    "QuantitativeBasisEvaluator",
     "QuoteGroundingEvaluator",
     "RecordedState",
+    "ReferenceInstrument",
     "RequirementStructureEvaluator",
+    "ResolvedAsset",
     "ResolvedCapability",
     "ResolvedEvent",
     "ResolvedSpan",
@@ -206,8 +251,12 @@ __all__ = [
     "evaluate_clustering",
     "independent_support",
     "jaccard",
+    "lookup",
+    "material_candidates",
     "normalize_for_matching",
     "requirement_summary",
+    "resolution_rate",
+    "resolvable_names",
     "resolve_span",
     "shingles",
     "slugify",

@@ -473,3 +473,81 @@ counted from your classification rather than asserted by you.\
 """,
     )
 )
+
+
+ASSET_DISCOVERY_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="asset_discovery",
+        version="1.0.0",
+        description="Find the investable universe for a Capability (agent doc §8.1).",
+        template="""\
+Identify the investable Assets that provide meaningful exposure to this \
+Capability.
+
+Consider every instrument class, not only equities:
+
+    common_stock   an operating company whose economics turn on the Capability
+    etf            a fund whose holdings concentrate the exposure
+    commodity      the underlying material itself, where the Capability is \
+about producing, processing or consuming it. For a commodity supply cycle this \
+is often the cleanest expression available — a copper shortage is expressed by \
+copper more directly than by any one miner, whose costs, hedging, jurisdiction \
+and balance sheet all sit between the thesis and the outcome.
+    currency       where the Process moves a currency: terms-of-trade shifts \
+for a commodity exporter, capital-flow or monetary-policy driven Processes, \
+trade-regime changes
+    bond           where the exposure is to credit or rates rather than equity
+    index          where the exposure is broad and no single instrument \
+concentrates it
+
+For each Asset give:
+- proposed_name, and where it is a commodity or currency, the standard symbol \
+in proposed_ticker (for example XAU for gold, XAG for silver, HG for copper, \
+USDJPY for the yen pair)
+- asset_class
+- exposure_pathway: how the Capability reaches this Asset's economics
+- directness: direct, indirect, or optionality
+- materiality: whether the exposure is material or incidental to the Asset
+- geography and dependencies
+- confidence
+
+Name the instrument, not the trade. Do not rank the Assets, do not estimate \
+returns or direction, and do not comment on valuation or timing — later agents \
+do that with quantitative data you do not have.
+
+Where the commodity or currency itself is a plausible expression, include it. \
+Reaching only for equities because they are easier to name is the specific \
+failure this step is meant to avoid.\
+""",
+    )
+)
+
+
+ASSET_EXPOSURE_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="asset_exposure",
+        version="1.0.0",
+        description="Estimate an Asset's exposure to a Capability (agent doc §8.2).",
+        template="""\
+Estimate this Asset's exposure to the specified Capability.
+
+Separate:
+- direct exposure: the Capability is part of what the Asset is
+- indirect exposure: the Asset benefits through a chain of other parties
+- optionality: exposure that exists only if something else happens first
+- dependencies: what has to hold for the exposure to be real
+- offsetting exposures: ways the same Process hurts this Asset. A processor \
+that also consumes the constrained input is a weaker expression than its \
+revenue share suggests, and omitting that is how an exposure estimate flatters \
+the thesis.
+
+For each exposure give the kind, directness, a 0-10 magnitude, and the \
+reasoning. Give revenue_share only where a supplied figure supports it, and \
+name that figure in quantitative_basis — a revenue share inferred from a \
+company describing itself as "a leader in" something is not evidence.
+
+Use the quantitative evidence supplied. Do not infer exposure from marketing \
+language, do not estimate returns, and do not compare this Asset to others.\
+""",
+    )
+)

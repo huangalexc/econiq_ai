@@ -79,9 +79,15 @@ class AgentRunRecorder:
                     evaluation={
                         "passed": result.evaluation.passed,
                         "checks": [
-                            {"name": c.name, "passed": c.passed, "detail": c.detail}
+                            {
+                                "name": c.name,
+                                "passed": c.passed,
+                                "detail": c.detail,
+                                "blocking": c.blocking,
+                            }
                             for c in result.evaluation.checks
                         ],
+                        "advisories": [c.name for c in result.evaluation.advisories],
                     },
                     attempts=len(result.calls),
                     input_tokens=usage.input_tokens,

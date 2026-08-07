@@ -39,6 +39,14 @@ class EvaluationCheck:
     name: str
     passed: bool
     detail: str | None = None
+    blocking: bool = True
+    """Whether failing this check should stop the output being persisted.
+
+    Some findings are worth recording without refusing the work — "this
+    Commodity Supply Cycle considered no direct commodity exposure" is a real
+    quality signal, but discarding the equities the agent did find would leave
+    the graph emptier rather than better.
+    """
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,11 +55,18 @@ class EvaluationReport:
 
     @property
     def passed(self) -> bool:
-        return all(check.passed for check in self.checks)
+        """Whether the output may be persisted. Advisories do not block."""
+        return all(check.passed for check in self.checks if check.blocking)
 
     @property
     def failures(self) -> tuple[EvaluationCheck, ...]:
-        return tuple(check for check in self.checks if not check.passed)
+        """Blocking checks that failed."""
+        return tuple(check for check in self.checks if not check.passed and check.blocking)
+
+    @property
+    def advisories(self) -> tuple[EvaluationCheck, ...]:
+        """Non-blocking findings — recorded, surfaced, but not refused."""
+        return tuple(check for check in self.checks if not check.passed and not check.blocking)
 
 
 class Evaluator(Protocol):

@@ -636,6 +636,15 @@ class Asset(Base, RevisionMixin):
     isin: Mapped[str | None] = mapped_column(String(12), nullable=True)
     figi: Mapped[str | None] = mapped_column(String(12), nullable=True)
     cik: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # Non-equity identifiers. A Commodity Supply Cycle is often expressed most
+    # cleanly by the commodity itself, and a policy-driven Process by a currency;
+    # an assets table that only knew about tickers would force every thesis into
+    # the equity market.
+    commodity_code: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)
+    contract_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    benchmark: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    currency_pair: Mapped[str | None] = mapped_column(String(6), nullable=True, index=True)
+    currency_code: Mapped[str | None] = mapped_column(String(3), nullable=True)
     country: Mapped[str | None] = mapped_column(String(2), nullable=True)
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     sector: Mapped[str | None] = mapped_column(String(128), nullable=True)
@@ -649,6 +658,15 @@ class Asset(Base, RevisionMixin):
         CheckConstraint(
             "asset_class NOT IN ('common_stock', 'etf') OR ticker IS NOT NULL",
             name="listed_assets_need_ticker",
+        ),
+        CheckConstraint(
+            "asset_class <> 'commodity' OR commodity_code IS NOT NULL "
+            "OR contract_code IS NOT NULL OR benchmark IS NOT NULL",
+            name="commodities_need_a_code",
+        ),
+        CheckConstraint(
+            "asset_class <> 'currency' OR currency_pair IS NOT NULL OR currency_code IS NOT NULL",
+            name="currencies_need_a_pair_or_code",
         ),
     )
 
@@ -666,6 +684,11 @@ class AssetCandidate(Base, TimestampMixin):
     proposed_name: Mapped[str] = mapped_column(String(256), nullable=False)
     proposed_ticker: Mapped[str | None] = mapped_column(String(32), nullable=True)
     proposed_exchange: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    proposed_symbol: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+        comment="Commodity code or currency pair, for non-equity expressions.",
+    )
     asset_class: Mapped[AssetClass] = mapped_column(e.ASSET_CLASS, nullable=False)
     capability_id: Mapped[uuid.UUID | None] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("nodes.node_id", ondelete="RESTRICT"), nullable=True

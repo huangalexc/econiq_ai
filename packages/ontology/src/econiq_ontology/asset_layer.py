@@ -20,14 +20,41 @@ from econiq_ontology.provenance import AgentAttribution, EntityRef, EvidenceRef
 
 class AssetIdentifiers(OntologyModel):
     """Market identifiers. Resolution is deterministic work — an LLM may propose
-    a ticker, but only code may assert one (agent doc §2.3)."""
+    a ticker, but only code may assert one (agent doc §2.3).
 
+    Deliberately not equity-only. A Commodity Supply Cycle is often expressed
+    most cleanly by the commodity itself rather than by a producer's equity, and
+    a Process driven by monetary policy may be expressed in a currency. An
+    identifier model that only knew about tickers would quietly push every
+    thesis into the equity market.
+    """
+
+    # Equities and funds
     ticker: str | None = None
     exchange: str | None = None
     isin: str | None = None
     figi: str | None = None
     cik: str | None = None
     cusip: str | None = None
+
+    # Commodities: the metal, energy or agricultural unit itself
+    commodity_code: str | None = Field(
+        default=None, description="Standard code, e.g. XAU (gold), XAG (silver), HG (copper)."
+    )
+    contract_code: str | None = Field(
+        default=None, description="Futures contract, e.g. 'COMEX:GC' — the traded expression."
+    )
+    benchmark: str | None = Field(
+        default=None, description="Reference price, e.g. 'LBMA Gold PM', 'Platts IODEX 62%'."
+    )
+
+    # Currencies
+    currency_pair: str | None = Field(
+        default=None, pattern=r"^[A-Z]{3}[A-Z]{3}$", description="e.g. USDJPY."
+    )
+    currency_code: str | None = Field(
+        default=None, pattern=r"^[A-Z]{3}$", description="ISO 4217, when the Asset is one currency."
+    )
 
 
 class AssetCandidate(OntologyModel):
@@ -71,10 +98,25 @@ class Asset(Entity):
     attribution: AgentAttribution | None = None
 
     @model_validator(mode="after")
-    def _listed_assets_need_a_ticker(self) -> Self:
-        listed = (AssetClass.COMMON_STOCK, AssetClass.ETF)
-        if self.asset_class in listed and not self.identifiers.ticker:
-            raise ValueError(f"{self.asset_class.value} requires a ticker")
+    def _identifiers_match_the_asset_class(self) -> Self:
+        """Every Asset must be identifiable in the way its class is traded.
+
+        A ticker is the wrong requirement for gold and a meaningless one for a
+        currency pair; requiring one anyway is how a system ends up expressing
+        every thesis through equities.
+        """
+        identifiers = self.identifiers
+        required: dict[AssetClass, tuple[str, ...]] = {
+            AssetClass.COMMON_STOCK: ("ticker",),
+            AssetClass.ETF: ("ticker",),
+            AssetClass.COMMODITY: ("commodity_code", "contract_code", "benchmark"),
+            AssetClass.CURRENCY: ("currency_pair", "currency_code"),
+            AssetClass.INDEX: ("ticker", "benchmark"),
+            AssetClass.BOND: ("isin", "cusip", "ticker"),
+        }
+        accepted = required[self.asset_class]
+        if not any(getattr(identifiers, field) for field in accepted):
+            raise ValueError(f"{self.asset_class.value} requires one of: {', '.join(accepted)}")
         return self
 
 

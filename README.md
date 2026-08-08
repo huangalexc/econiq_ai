@@ -72,6 +72,8 @@ not the measurement.
 | #31 Thesis journal | every belief change, immutable, each reaching the run that made it |
 | #32 Semantic alerts | thesis changes rather than price moves, derived at read time |
 | #77 Market data | `services/market` — Tiingo daily and FX, storing raw *and* adjusted closes with both clocks |
+| #75 Asset Quant | reproducible price metrics computed by code; five of §8.3's nine analyses named as unsourceable |
+| #76 Asset Quality | qualitative axes judged per Capability, with valuation language refused |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000

@@ -675,3 +675,39 @@ confidence.\
 """,
     )
 )
+
+
+ASSET_QUALITY_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="asset_quality",
+        version="1.0.0",
+        description="Qualitative Asset characteristics (agent doc §8.4).",
+        template="""\
+Evaluate this Asset as an expression of the specified Capability.
+
+That framing is the whole task. You are not rating a company. The same company \
+is a strong expression of one Capability and a weak expression of another, and \
+the question is only ever how well this one carries this Capability.
+
+Score only the axes you are given. Some are measured from price data and will \
+be supplied already computed — do not score those, and do not adjust your own \
+scores to agree with them.
+
+For each axis give:
+- value 0-10
+- why_not_higher: what keeps it below 10. Every axis needs one.
+- facts: what you can point to in the supplied evidence
+- inferences: judgements you made on top of those facts, listed separately
+- counterarguments: the case against your own score. An assessment with no \
+stated counterargument is a pitch.
+
+Do not consider valuation, price level, or technical setup. Those belong to a \
+different analysis and mixing them in is the specific failure the score \
+families exist to prevent. Do not offer a view on whether the underlying \
+economic Process is real — that is a separate score about a separate object.
+
+Separate what you observed from what you concluded. An axis resting mostly on \
+inference is a weaker score and the reader is entitled to see that.\
+""",
+    )
+)

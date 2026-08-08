@@ -5,6 +5,7 @@ stopping at their ontology layer. Everything they produce carries the agent run
 that produced it.
 """
 
+from econiq_agents import asset_metrics
 from econiq_agents.asset_agents import (
     AssetDiscoveryAgent,
     AssetExposureAgent,
@@ -20,6 +21,12 @@ from econiq_agents.asset_persistence import (
     PersistedExposures,
     ResolvedAsset,
     resolution_rate,
+)
+from econiq_agents.asset_quality_agent import AssetQualityAgent
+from econiq_agents.asset_scoring_stage import (
+    AssetScore,
+    AssetScoringOutcome,
+    AssetScoringStage,
 )
 from econiq_agents.asset_stage import AssetDiscoveryStage, AssetOutcome
 from econiq_agents.capability_agents import (
@@ -192,7 +199,11 @@ __all__ = [
     "AssetDiscoveryStage",
     "AssetExposureAgent",
     "AssetOutcome",
+    "AssetQualityAgent",
     "AssetResolution",
+    "AssetScore",
+    "AssetScoringOutcome",
+    "AssetScoringStage",
     "AssetWriter",
     "BindingClarityEvaluator",
     "BottleneckIdentificationAgent",
@@ -280,6 +291,7 @@ __all__ = [
     "TransitionSignificance",
     "WrittenEdge",
     "assess_independence",
+    "asset_metrics",
     "classify_transition",
     "clusters_from_pairs",
     "cosine_similarity",

@@ -27,6 +27,7 @@ from fastapi import APIRouter, Query
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from econiq_api import provenance
 from econiq_api.deps import AsOfDep, PageDep, SessionDep
 from econiq_api.errors import not_found
 from econiq_api.schemas import (
@@ -37,6 +38,7 @@ from econiq_api.schemas import (
     ProcessStateOut,
     ProcessSummaryOut,
     ProcessTimelineOut,
+    ProvenanceOut,
     StateFeatureOut,
     TimelineEntryOut,
 )
@@ -112,11 +114,20 @@ async def get_process(
     # state_confidence of 0.82 with no visible basis is exactly the unexplained
     # number this API is not supposed to return.
     features = await _features(session, [state.process_state_id] if state else [])
+    attribution = await provenance.load(session, [state.agent_run_id] if state is not None else [])
 
     detail = _summary(process, state)
     return ProcessDetailOut(
         **detail.model_dump(),
-        state=(_state_out(state, features.get(state.process_state_id, [])) if state else None),
+        state=(
+            _state_out(
+                state,
+                features.get(state.process_state_id, []),
+                attribution.get(state.agent_run_id) if state.agent_run_id else None,
+            )
+            if state
+            else None
+        ),
         open_bottlenecks=[BottleneckOut.from_row(b) for b in bottlenecks],
         open_critiques=[CritiqueOut.from_row(c) for c in critiques],
         evidence_event_count=supporting,
@@ -145,7 +156,15 @@ async def state_history(
         .all()
     )
     features = await _features(session, [row.process_state_id for row in rows])
-    return [_state_out(row, features.get(row.process_state_id, [])) for row in rows]
+    attribution = await provenance.load(session, (row.agent_run_id for row in rows))
+    return [
+        _state_out(
+            row,
+            features.get(row.process_state_id, []),
+            attribution.get(row.agent_run_id) if row.agent_run_id else None,
+        )
+        for row in rows
+    ]
 
 
 @router.get("/{process_id}/timeline", response_model=ProcessTimelineOut)
@@ -411,7 +430,9 @@ def _summary(process: Process, state: ProcessState | None) -> ProcessSummaryOut:
 
 
 def _state_out(
-    state: ProcessState, features: list[ProcessStateFeature] | None = None
+    state: ProcessState,
+    features: list[ProcessStateFeature] | None = None,
+    attribution: ProvenanceOut | None = None,
 ) -> ProcessStateOut:
     return ProcessStateOut(
         id=state.process_state_id,
@@ -427,6 +448,7 @@ def _state_out(
         transition_beliefs=dict(state.transition_beliefs),
         transition_indicators=list(state.transition_indicators),
         reversal_indicators=list(state.reversal_indicators),
+        provenance=attribution,
     )
 
 

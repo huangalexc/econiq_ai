@@ -791,3 +791,65 @@ async def test_an_unknown_archetype_is_rejected_rather_than_invented(client):
     response = await client.get("/api/archetypes/not_an_archetype")
 
     assert response.status_code == 422
+
+
+async def test_a_claim_names_the_run_that_extracted_it(client, graph, session_factory):
+    """Issues #24, #25. ui_concept §23 requires model version on every explanation."""
+    async with session_factory() as session:
+        await session.execute(
+            update(Claim).where(Claim.claim_id == graph["claim"]).values(agent_run_id=graph["run"])
+        )
+        await session.commit()
+
+    body = (await client.get(f"/api/evidence/{graph['process']}/inspect")).json()
+
+    claim = next(c for c in body["claims"] if c["id"] == str(graph["claim"]))
+    assert claim["provenance"]["agent_name"] == "process_critic"
+    assert claim["provenance"]["agent_run_id"] == str(graph["run"])
+
+
+async def test_the_inspector_returns_the_claims_not_a_summary_of_them(client, graph):
+    """§29: evidence must never be shown as an undifferentiated AI summary."""
+    body = (await client.get(f"/api/evidence/{graph['process']}/inspect")).json()
+
+    assert body["is_evidenced"] is True
+    claim = body["claims"][0]
+    # The verified span, so a reader can reach the sentence in the document.
+    assert claim["source_location"]["char_start"] is not None
+    assert claim["text"]
+    assert body["documents"][0]["title"]
+
+
+async def test_the_inspector_counts_independent_sources_not_documents(client, graph):
+    """Four syndicated copies of one wire report are one source (§47)."""
+    body = (await client.get(f"/api/evidence/{graph['process']}/inspect")).json()
+
+    assert body["independent_source_count"] == 2
+
+
+async def test_a_scorecard_carries_the_model_that_produced_it(client, graph):
+    body = (await client.get(f"/api/scores/{graph['process']}")).json()
+
+    card = body[0]
+    assert card["provenance"]["agent_run_id"] == str(graph["run"])
+    assert card["provenance"]["as_of"]
+    assert card["provenance"]["recorded_at"]
+
+
+async def test_provenance_is_null_rather_than_absent_when_nothing_produced_a_row(
+    client, graph, session_factory
+):
+    """A row nobody can attribute is either a seed or a defect, and both are
+    things the reader should see rather than a blank space."""
+    body = (await client.get(f"/api/evidence/{graph['process']}/inspect")).json()
+
+    claim = body["claims"][0]
+    assert "provenance" in claim
+    assert claim["provenance"] is None
+
+
+async def test_a_state_assignment_is_explainable_like_a_score_is(client, graph):
+    """§23 lists State assignments alongside scores as explainable objects."""
+    body = (await client.get(f"/api/processes/{graph['process']}")).json()
+
+    assert "provenance" in body["state"]

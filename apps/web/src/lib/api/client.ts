@@ -194,6 +194,13 @@ export const api = {
   evidence: (nodeId: string, options?: RequestOptions) =>
     request<Ok<"/api/evidence/{node_id}">>(`/api/evidence/${nodeId}`, options),
 
+  /** The full drill-down: Events, Claims, verified spans, documents, runs. */
+  inspect: (nodeId: string, options?: RequestOptions) =>
+    request<Ok<"/api/evidence/{node_id}/inspect">>(
+      `/api/evidence/${nodeId}/inspect`,
+      options,
+    ),
+
   scores: (subjectId: string, options?: RequestOptions) =>
     request<Ok<"/api/scores/{subject_id}">>(`/api/scores/${subjectId}`, options),
 
@@ -225,6 +232,10 @@ export type ProcessState = NonNullable<
 >[number];
 export type Critique = Ok<"/api/processes/{process_id}/critiques">[number];
 export type Scorecard = Ok<"/api/scores/{subject_id}">[number];
+export type ScoreDimension = NonNullable<Scorecard["dimensions"]>[number];
+export type Provenance = NonNullable<Scorecard["provenance"]>;
+export type Inspection = Ok<"/api/evidence/{node_id}/inspect">;
+export type InspectedClaim = NonNullable<Inspection["claims"]>[number];
 export type ProcessDetail = Ok<"/api/processes/{process_id}">;
 export type EventSummary = Ok<"/api/events">[number];
 export type BottleneckSummary = Ok<"/api/bottlenecks">[number];

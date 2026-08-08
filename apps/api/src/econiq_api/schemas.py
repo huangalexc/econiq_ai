@@ -107,6 +107,7 @@ class ProcessStateOut(ApiModel):
     )
     transition_indicators: list[str] = Field(default_factory=list)
     reversal_indicators: list[str] = Field(default_factory=list)
+    provenance: ProvenanceOut | None = None
 
 
 class JournalEntryOut(ApiModel):
@@ -187,6 +188,41 @@ class EventOut(ApiModel):
     revision: int
 
 
+class ProvenanceOut(ApiModel):
+    """Who produced a derived row, with what, and when (ui_concept §23, §29).
+
+    One shape for every explanation. §23 requires model version, timestamp and
+    confidence on all of them, and three near-identical bespoke versions would
+    have drifted the first time one of them gained a field.
+    """
+
+    agent_run_id: uuid.UUID
+    agent_name: str
+    agent_version: str
+    model: str | None = None
+    provider: str | None = None
+    prompt_name: str | None = None
+    prompt_version: str | None = None
+    prompt_content_hash: str | None = Field(
+        default=None,
+        description=(
+            "First 12 characters. Enough to tell whether two rows came from the "
+            "same prompt text, which is the question a reader actually has."
+        ),
+    )
+    as_of: datetime = Field(description="The cut-off the agent was given.")
+    recorded_at: datetime
+    status: str
+    evaluation_passed: bool | None = Field(
+        default=None,
+        description="Whether the deterministic checks accepted this output.",
+    )
+    advisories: list[str] = Field(
+        default_factory=list,
+        description="Non-blocking check failures. The output was accepted with these noted.",
+    )
+
+
 class ClaimOut(ApiModel):
     id: uuid.UUID
     document_id: uuid.UUID
@@ -197,6 +233,21 @@ class ClaimOut(ApiModel):
     extraction_confidence: float
     source_location: dict[str, Any] = Field(
         description="Verified span: the quote and its offsets in the parsed document."
+    )
+    stated_at: datetime | None = Field(
+        default=None,
+        description=(
+            "When the Claim says the thing happened, where that differs from "
+            "when its document was published."
+        ),
+    )
+    provenance: ProvenanceOut | None = Field(
+        default=None,
+        description=(
+            "The extraction run. Null means nothing can be attributed, which is "
+            "shown rather than hidden — an unattributable quotation is exactly "
+            "what the evidence chain exists to prevent."
+        ),
     )
 
 
@@ -225,6 +276,30 @@ class EvidenceTrailOut(ApiModel):
     claim_ids: list[uuid.UUID] = Field(default_factory=list)
     document_ids: list[uuid.UUID] = Field(default_factory=list)
     is_evidenced: bool
+
+
+class ProvenanceInspectionOut(ApiModel):
+    """The full drill-down behind one node (ui_concept §29).
+
+    §29 is explicit that "evidence should never be represented merely as an
+    undifferentiated AI summary". So this returns the Claims themselves, with
+    their verified source spans and the run that extracted each — not counts,
+    and not a paraphrase.
+    """
+
+    subject: NodeRef
+    is_evidenced: bool
+    supporting_events: list[NodeRef] = Field(default_factory=list)
+    contradicting_events: list[NodeRef] = Field(default_factory=list)
+    claims: list[ClaimOut] = Field(default_factory=list)
+    documents: list[DocumentOut] = Field(default_factory=list)
+    independent_source_count: int = Field(
+        default=0,
+        description=(
+            "Distinct reports after syndication collapse, summed over the "
+            "supporting Events — not the document count (ontology §47)."
+        ),
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -408,6 +483,7 @@ class ScorecardOut(ApiModel):
     composite: float | None
     composite_method: str | None
     dimensions: list[ScoreDimensionOut] = Field(default_factory=list)
+    provenance: ProvenanceOut | None = None
 
 
 class GraphNodeOut(ApiModel):

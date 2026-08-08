@@ -266,6 +266,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/evidence/{node_id}/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Inspect
+         * @description The full chain behind a node: Events, Claims, spans, documents, runs.
+         *
+         *     This is the endpoint the trust argument rests on. A user who cannot get from
+         *     a conclusion to the sentence in the document that produced it has to take
+         *     the conclusion on faith, which is the thing this system exists not to ask.
+         */
+        get: operations["inspect_api_evidence__node_id__inspect_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/bottlenecks": {
         parameters: {
             query?: never;
@@ -857,6 +881,13 @@ export interface components {
             source_location: {
                 [key: string]: unknown;
             };
+            /**
+             * Stated At
+             * @description When the Claim says the thing happened, where that differs from when its document was published.
+             */
+            stated_at?: string | null;
+            /** @description The extraction run. Null means nothing can be attributed, which is shown rather than hidden — an unattributable quotation is exactly what the evidence chain exists to prevent. */
+            provenance?: components["schemas"]["ProvenanceOut"] | null;
         };
         /**
          * CritiqueKind
@@ -1428,6 +1459,7 @@ export interface components {
             transition_indicators?: string[];
             /** Reversal Indicators */
             reversal_indicators?: string[];
+            provenance?: components["schemas"]["ProvenanceOut"] | null;
         };
         /**
          * ProcessStatus
@@ -1472,6 +1504,89 @@ export interface components {
             process_id: string;
             /** Entries */
             entries?: components["schemas"]["TimelineEntryOut"][];
+        };
+        /**
+         * ProvenanceInspectionOut
+         * @description The full drill-down behind one node (ui_concept §29).
+         *
+         *     §29 is explicit that "evidence should never be represented merely as an
+         *     undifferentiated AI summary". So this returns the Claims themselves, with
+         *     their verified source spans and the run that extracted each — not counts,
+         *     and not a paraphrase.
+         */
+        ProvenanceInspectionOut: {
+            subject: components["schemas"]["NodeRef"];
+            /** Is Evidenced */
+            is_evidenced: boolean;
+            /** Supporting Events */
+            supporting_events?: components["schemas"]["NodeRef"][];
+            /** Contradicting Events */
+            contradicting_events?: components["schemas"]["NodeRef"][];
+            /** Claims */
+            claims?: components["schemas"]["ClaimOut"][];
+            /** Documents */
+            documents?: components["schemas"]["DocumentOut"][];
+            /**
+             * Independent Source Count
+             * @description Distinct reports after syndication collapse, summed over the supporting Events — not the document count (ontology §47).
+             * @default 0
+             */
+            independent_source_count: number;
+        };
+        /**
+         * ProvenanceOut
+         * @description Who produced a derived row, with what, and when (ui_concept §23, §29).
+         *
+         *     One shape for every explanation. §23 requires model version, timestamp and
+         *     confidence on all of them, and three near-identical bespoke versions would
+         *     have drifted the first time one of them gained a field.
+         */
+        ProvenanceOut: {
+            /**
+             * Agent Run Id
+             * Format: uuid
+             */
+            agent_run_id: string;
+            /** Agent Name */
+            agent_name: string;
+            /** Agent Version */
+            agent_version: string;
+            /** Model */
+            model?: string | null;
+            /** Provider */
+            provider?: string | null;
+            /** Prompt Name */
+            prompt_name?: string | null;
+            /** Prompt Version */
+            prompt_version?: string | null;
+            /**
+             * Prompt Content Hash
+             * @description First 12 characters. Enough to tell whether two rows came from the same prompt text, which is the question a reader actually has.
+             */
+            prompt_content_hash?: string | null;
+            /**
+             * As Of
+             * Format: date-time
+             * @description The cut-off the agent was given.
+             */
+            as_of: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Status */
+            status: string;
+            /**
+             * Evaluation Passed
+             * @description Whether the deterministic checks accepted this output.
+             */
+            evaluation_passed?: boolean | null;
+            /**
+             * Advisories
+             * @description Non-blocking check failures. The output was accepted with these noted.
+             */
+            advisories?: string[];
         };
         /** QueueDepthOut */
         QueueDepthOut: {
@@ -1613,6 +1728,7 @@ export interface components {
             composite_method: string | null;
             /** Dimensions */
             dimensions?: components["schemas"]["ScoreDimensionOut"][];
+            provenance?: components["schemas"]["ProvenanceOut"] | null;
         };
         /** StateFeatureOut */
         StateFeatureOut: {
@@ -2154,6 +2270,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvidenceTrailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inspect_api_evidence__node_id__inspect_get: {
+        parameters: {
+            query?: {
+                /** @description Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvenanceInspectionOut"];
                 };
             };
             /** @description Validation Error */

@@ -1069,6 +1069,69 @@
         }
       }
     },
+    "/api/evidence/{node_id}/inspect": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Inspect",
+        "description": "The full chain behind a node: Events, Claims, spans, documents, runs.\n\nThis is the endpoint the trust argument rests on. A user who cannot get from\na conclusion to the sentence in the document that produced it has to take\nthe conclusion on faith, which is the thing this system exists not to ask.",
+        "operationId": "inspect_api_evidence__node_id__inspect_get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvenanceInspectionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/bottlenecks": {
       "get": {
         "tags": [
@@ -3047,6 +3110,30 @@
             "type": "object",
             "title": "Source Location",
             "description": "Verified span: the quote and its offsets in the parsed document."
+          },
+          "stated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stated At",
+            "description": "When the Claim says the thing happened, where that differs from when its document was published."
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProvenanceOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The extraction run. Null means nothing can be attributed, which is shown rather than hidden \u2014 an unattributable quotation is exactly what the evidence chain exists to prevent."
           }
         },
         "additionalProperties": false,
@@ -4458,6 +4545,16 @@
             },
             "type": "array",
             "title": "Reversal Indicators"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProvenanceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -4606,6 +4703,179 @@
           "process_id"
         ],
         "title": "ProcessTimelineOut"
+      },
+      "ProvenanceInspectionOut": {
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/NodeRef"
+          },
+          "is_evidenced": {
+            "type": "boolean",
+            "title": "Is Evidenced"
+          },
+          "supporting_events": {
+            "items": {
+              "$ref": "#/components/schemas/NodeRef"
+            },
+            "type": "array",
+            "title": "Supporting Events"
+          },
+          "contradicting_events": {
+            "items": {
+              "$ref": "#/components/schemas/NodeRef"
+            },
+            "type": "array",
+            "title": "Contradicting Events"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimOut"
+            },
+            "type": "array",
+            "title": "Claims"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentOut"
+            },
+            "type": "array",
+            "title": "Documents"
+          },
+          "independent_source_count": {
+            "type": "integer",
+            "title": "Independent Source Count",
+            "description": "Distinct reports after syndication collapse, summed over the supporting Events \u2014 not the document count (ontology \u00a747).",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "subject",
+          "is_evidenced"
+        ],
+        "title": "ProvenanceInspectionOut",
+        "description": "The full drill-down behind one node (ui_concept \u00a729).\n\n\u00a729 is explicit that \"evidence should never be represented merely as an\nundifferentiated AI summary\". So this returns the Claims themselves, with\ntheir verified source spans and the run that extracted each \u2014 not counts,\nand not a paraphrase."
+      },
+      "ProvenanceOut": {
+        "properties": {
+          "agent_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Agent Run Id"
+          },
+          "agent_name": {
+            "type": "string",
+            "title": "Agent Name"
+          },
+          "agent_version": {
+            "type": "string",
+            "title": "Agent Version"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "prompt_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Name"
+          },
+          "prompt_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Version"
+          },
+          "prompt_content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Content Hash",
+            "description": "First 12 characters. Enough to tell whether two rows came from the same prompt text, which is the question a reader actually has."
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of",
+            "description": "The cut-off the agent was given."
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "evaluation_passed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluation Passed",
+            "description": "Whether the deterministic checks accepted this output."
+          },
+          "advisories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Advisories",
+            "description": "Non-blocking check failures. The output was accepted with these noted."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "agent_run_id",
+          "agent_name",
+          "agent_version",
+          "as_of",
+          "recorded_at",
+          "status"
+        ],
+        "title": "ProvenanceOut",
+        "description": "Who produced a derived row, with what, and when (ui_concept \u00a723, \u00a729).\n\nOne shape for every explanation. \u00a723 requires model version, timestamp and\nconfidence on all of them, and three near-identical bespoke versions would\nhave drifted the first time one of them gained a field."
       },
       "QueueDepthOut": {
         "properties": {
@@ -4897,6 +5167,16 @@
             },
             "type": "array",
             "title": "Dimensions"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProvenanceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,

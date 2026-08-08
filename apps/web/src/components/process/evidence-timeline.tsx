@@ -26,7 +26,16 @@ const KIND_LABEL: Record<TimelineEntry["kind"], string> = {
   critique: "Critique",
 };
 
-export function EvidenceTimeline({ entries }: { entries: TimelineEntry[] }) {
+export function EvidenceTimeline({
+  entries,
+  onInspect,
+  activeId,
+}: {
+  entries: TimelineEntry[];
+  /** Called with the node behind an entry. Absent means the list is read-only. */
+  onInspect?: (nodeId: string, title: string) => void;
+  activeId?: string | null;
+}) {
   if (entries.length === 0) {
     return (
       <p className="text-sm text-ink-muted">
@@ -43,7 +52,10 @@ export function EvidenceTimeline({ entries }: { entries: TimelineEntry[] }) {
         return (
           <li
             key={`${entry.kind}-${entry.subject_id ?? index}-${entry.occurred_at}`}
-            className="flex gap-4 border-b border-border py-3 last:border-0"
+            className={cn(
+              "flex gap-4 border-b border-border py-3 last:border-0",
+              activeId && activeId === entry.subject_id && "bg-surface-raised",
+            )}
           >
             <div className="w-24 shrink-0">
               <time
@@ -77,11 +89,27 @@ export function EvidenceTimeline({ entries }: { entries: TimelineEntry[] }) {
                 >
                   {KIND_LABEL[entry.kind]}
                 </span>
-                <p className="min-w-0 text-sm text-ink">
-                  {entry.kind === "state"
-                    ? humanise(entry.title)
-                    : entry.title}
-                </p>
+                {/* Only entries that point at a node can be traced. An
+                    always-clickable row that sometimes does nothing teaches
+                    people the affordance is unreliable. */}
+                {onInspect && entry.subject_id ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onInspect(entry.subject_id as string, entry.title)
+                    }
+                    className={cn(
+                      "min-w-0 text-left text-sm hover:text-accent hover:underline",
+                      activeId === entry.subject_id ? "text-accent" : "text-ink",
+                    )}
+                  >
+                    {entry.kind === "state" ? humanise(entry.title) : entry.title}
+                  </button>
+                ) : (
+                  <p className="min-w-0 text-sm text-ink">
+                    {entry.kind === "state" ? humanise(entry.title) : entry.title}
+                  </p>
+                )}
               </div>
 
               {entry.detail ? (

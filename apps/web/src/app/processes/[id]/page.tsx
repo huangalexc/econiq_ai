@@ -17,12 +17,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
+import { ThesisScorecard } from "@/components/explain/thesis-scorecard";
 import { EvidenceTimeline } from "@/components/process/evidence-timeline";
 import { ProcessHeader } from "@/components/process/process-header";
+import { ProvenanceInspector } from "@/components/process/provenance-inspector";
 import { StateBelief } from "@/components/process/state-belief";
 import { StateMachineTrack } from "@/components/process/state-machine";
 import { ApiError, api } from "@/lib/api/client";
-import type { ProcessDetail } from "@/lib/api/client";
+import type { ProcessDetail, Scorecard } from "@/lib/api/client";
 import { useAsOf } from "@/lib/as-of";
 import { keyFor } from "@/lib/query";
 import { cn, humanise } from "@/lib/utils";
@@ -40,6 +42,9 @@ export default function ProcessPage() {
   const { id } = useParams<{ id: string }>();
   const { asOf } = useAsOf();
   const [tab, setTab] = useState<Tab>("overview");
+  const [inspecting, setInspecting] = useState<{ id: string; title: string } | null>(
+    null,
+  );
 
   // One cut-off, four panels. Each query carries `asOf` in its key, so
   // switching the cut-off refetches all of them rather than leaving a stale
@@ -106,7 +111,17 @@ export default function ProcessPage() {
 
       <div className="py-6">
         {tab === "overview" ? (
-          <Overview process={process} />
+          <Overview
+            process={process}
+            scorecards={scores.data ?? []}
+            // Tracing evidence *is* moving to the evidence perspective. Opening
+            // the inspector without switching would leave the panel rendering
+            // on a tab the reader is not looking at.
+            onInspect={(id, title) => {
+              setInspecting({ id, title });
+              setTab("evidence");
+            }}
+          />
         ) : tab === "state" ? (
           <div className="grid gap-10 lg:grid-cols-2">
             <section>
@@ -133,7 +148,27 @@ export default function ProcessPage() {
             {process.state ? <StateBelief state={process.state} /> : null}
           </div>
         ) : tab === "evidence" ? (
-          <EvidenceTimeline entries={timeline.data?.entries ?? []} />
+          <div
+            className={cn(
+              "grid gap-6",
+              inspecting ? "lg:grid-cols-[1fr_24rem]" : "grid-cols-1",
+            )}
+          >
+            <EvidenceTimeline
+              entries={timeline.data?.entries ?? []}
+              onInspect={(id, title) => setInspecting({ id, title })}
+              activeId={inspecting?.id ?? null}
+            />
+            {inspecting ? (
+              <div className="lg:sticky lg:top-4 lg:max-h-[calc(100dvh-8rem)]">
+                <ProvenanceInspector
+                  nodeId={inspecting.id}
+                  title={inspecting.title}
+                  onClose={() => setInspecting(null)}
+                />
+              </div>
+            ) : null}
+          </div>
         ) : (
           <p className="text-sm text-ink-muted">
             The dependency graph explorer is <span className="text-ink">#26</span>.
@@ -147,13 +182,27 @@ export default function ProcessPage() {
   );
 }
 
-function Overview({ process }: { process: ProcessDetail }) {
+function Overview({
+  process,
+  scorecards,
+  onInspect,
+}: {
+  process: ProcessDetail;
+  scorecards: Scorecard[];
+  onInspect: (id: string, title: string) => void;
+}) {
   const bottlenecks = process.open_bottlenecks ?? [];
   const critiques = process.open_critiques ?? [];
   const features = process.state?.features ?? [];
 
   return (
     <div className="grid gap-8 lg:grid-cols-2">
+      <div className="lg:col-span-2">
+        <ThesisScorecard
+          scorecard={scorecards.find((card) => card.family === "thesis_quality")}
+        />
+      </div>
+
       <section>
         <h2 className="text-sm font-medium text-ink">Binding constraints</h2>
         {bottlenecks.length === 0 ? (
@@ -181,6 +230,13 @@ function Overview({ process }: { process: ProcessDetail }) {
                 <p className="mt-1 text-[0.6875rem] text-ink-subtle">
                   {humanise(bottleneck.kind)}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => onInspect(bottleneck.id, bottleneck.name)}
+                  className="mt-1 text-xs text-accent hover:underline"
+                >
+                  Trace evidence
+                </button>
               </li>
             ))}
           </ul>

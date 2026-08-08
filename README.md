@@ -62,6 +62,8 @@ not the measurement.
 | #21 Discover screen | the emerging-Process panel, hot cards and the screener, with [Explain] on every rank |
 | #22 Emergence Radar | maturity against evidence acceleration, positioned from the archetype's State machine |
 | #23 Process screen | four synchronised perspectives over one `as_of`: overview, State evolution, evidence timeline, dependency graph |
+| #24 Provenance inspector | `/api/evidence/{id}/inspect` — Claims with verified spans, their documents, and the run that extracted each |
+| #25 [Explain] | one explanation shape for every derived number, carrying model, prompt version and timestamp |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000
@@ -82,11 +84,18 @@ into the client. The sequence defines which States are adjacent, and an inlined
 copy would drift the first time an archetype gained one — as the S-curve did
 during Phase 0.
 
+Every derived number carries a uniform provenance envelope — agent, model,
+prompt version and content hash, cut-off, and whether the deterministic checks
+accepted the output. That is what makes [Explain] a primitive rather than a
+component written once per screen.
+
+The Thesis Quality scorecard lists all nine ontology dimensions. Phase 0 writes
+one (`contradiction`, from the Process Critic); the rest name the agent that
+will write them — #65, #66, #67, or the Phase 2 historical engine. A scorecard
+showing one axis looks like a thesis measured on one axis, and it is not.
+
 Still open in #20: watchlist and alert CRUD needs users (#19), and Asset
-comparison payloads need the Asset Quality agent (#29). Two of ui_concept §6.1's
-six header measures have no data source in Phase 0 — historical precedent
-(Phase 2) and counterfactual robustness (no agent writes it) — and the header
-says so rather than leaving them blank.
+comparison payloads need the Asset Quality agent (#29).
 
 ## Quick start
 

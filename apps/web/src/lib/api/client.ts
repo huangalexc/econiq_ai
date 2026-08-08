@@ -89,7 +89,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 }
 
 /** Response body of a GET path, straight from the generated schema. */
-type Ok<P extends keyof paths> = paths[P] extends {
+export type Ok<P extends keyof paths> = paths[P] extends {
   get: { responses: { 200: { content: { "application/json": infer R } } } };
 }
   ? R
@@ -235,6 +235,7 @@ export type Scorecard = Ok<"/api/scores/{subject_id}">[number];
 export type ScoreDimension = NonNullable<Scorecard["dimensions"]>[number];
 export type Provenance = NonNullable<Scorecard["provenance"]>;
 export type Inspection = Ok<"/api/evidence/{node_id}/inspect">;
+export type SubgraphResponse = Ok<"/api/graph/subgraph">;
 export type InspectedClaim = NonNullable<Inspection["claims"]>[number];
 export type ProcessDetail = Ok<"/api/processes/{process_id}">;
 export type EventSummary = Ok<"/api/events">[number];

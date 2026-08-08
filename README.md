@@ -64,6 +64,7 @@ not the measurement.
 | #23 Process screen | four synchronised perspectives over one `as_of`: overview, State evolution, evidence timeline, dependency graph |
 | #24 Provenance inspector | `/api/evidence/{id}/inspect` — Claims with verified spans, their documents, and the run that extracted each |
 | #25 [Explain] | one explanation shape for every derived number, carrying model, prompt version and timestamp |
+| #26 Graph explorer | React Flow over the typed edges, expanded a hop at a time, laid out by ontology layer |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000

@@ -18,6 +18,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { ThesisScorecard } from "@/components/explain/thesis-scorecard";
+import { GraphExplorer } from "@/components/graph/graph-explorer";
 import { EvidenceTimeline } from "@/components/process/evidence-timeline";
 import { ProcessHeader } from "@/components/process/process-header";
 import { ProvenanceInspector } from "@/components/process/provenance-inspector";
@@ -170,12 +171,13 @@ export default function ProcessPage() {
             ) : null}
           </div>
         ) : (
-          <p className="text-sm text-ink-muted">
-            The dependency graph explorer is <span className="text-ink">#26</span>.
-            The traversal API behind it is built —{" "}
-            <code className="text-xs">/api/graph/subgraph</code> walks the typed
-            edges from this Process to its Assets, point-in-time.
-          </p>
+          <GraphExplorer
+            seedId={id}
+            selectedId={inspecting?.id ?? null}
+            // Selecting a node in the graph traces it, which is the same
+            // action the timeline offers — one meaning per gesture.
+            onSelect={(node) => setInspecting({ id: node.id, title: node.label })}
+          />
         )}
       </div>
     </div>

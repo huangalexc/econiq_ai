@@ -260,6 +260,10 @@ export const api = {
       request<Ok<"/api/runs/{run_id}">>(`/api/runs/${id}`, options),
   },
 
+  /** A research question, translated into a read the code runs (#33). */
+  ask: (options?: RequestOptions) =>
+    request<Ok<"/api/assistant/ask">>("/api/assistant/ask", options),
+
   workspace: {
     current: (options?: RequestOptions) =>
       request<Ok<"/api/workspace">>("/api/workspace", options),
@@ -309,6 +313,7 @@ export type Confluence = Ok<"/api/confluence">;
 export type ConfluenceHit = NonNullable<Confluence["capabilities"]>[number];
 export type JournalEntry = Ok<"/api/journal">[number];
 export type Alert = Ok<"/api/alerts">[number];
+export type AssistantAnswer = Ok<"/api/assistant/ask">;
 export type AssetDetail = Ok<"/api/assets/{asset_id}">;
 export type Comparison = Ok<"/api/comparison">;
 export type ComparisonColumn = NonNullable<Comparison["columns"]>[number];

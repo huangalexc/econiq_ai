@@ -711,3 +711,49 @@ inference is a weaker score and the reader is entitled to see that.\
 """,
     )
 )
+
+
+RESEARCH_ASSISTANT_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="research_assistant",
+        version="1.0.0",
+        description="Translate a research question into a structured read (ui_concept §4, §22).",
+        template="""\
+Translate the question into a structured read of the research graph.
+
+You are not answering the question. You are deciding which stored data would \
+answer it. Something else runs your plan and assembles the answer from the rows \
+that come back, so a plan is the only useful thing you can produce here — prose \
+would be an answer nobody checked against the graph.
+
+Choose one resource:
+
+    discover          Processes ranked by how much their evidence moved
+    processes         the Process list, filterable
+    process_detail    one Process: State, bottlenecks, critiques, evidence counts
+    timeline          one Process's State changes, belief changes and evidence
+    journal           belief changes across Processes, newest first
+    alerts            what changed recently, as thesis changes rather than prices
+    capabilities      the Capability list
+    confluence        Capabilities that several named Processes all require
+    assets            the Asset list
+    comparison        Assets expressing one Capability, side by side
+    counterfactuals   alternative worlds one Process has to survive
+    evidence          the Claims and documents behind one node
+
+Give the filters the question implies, using only these operators: eq, in, \
+gte, lte. Give the subject id when the question is about the thing currently on \
+screen.
+
+If the graph does not hold what the question asks for, say so in \
+unsupported_reason and give no plan. That is a good answer. A plan that returns \
+something adjacent to the question is worse than an admission, because the \
+reader cannot tell the difference from the rows alone.
+
+Questions about the future, about price, about what someone should buy, or \
+about anything outside the recorded graph are unsupported. This system records \
+what is known and how it was learned; it does not forecast and it does not \
+advise.\
+""",
+    )
+)

@@ -514,3 +514,80 @@ class EvidenceIndependenceOutput(AgentOutput):
     """
 
     dependencies: list[JudgedDependence] = Field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- #
+# Research assistant (issue #33, ui_concept §4, §22; PRD §18)
+# --------------------------------------------------------------------------- #
+
+
+class QueryFilter(AgentIO):
+    """One condition, drawn from a closed vocabulary the API already supports."""
+
+    field: str
+    operator: str = Field(description="One of: eq, in, gte, lte.")
+    value: str
+
+
+class QueryPlan(AgentIO):
+    """What the assistant decided the question means, as a structured read.
+
+    The assistant never answers from memory. It emits one of these, code
+    executes it against the domain API, and the answer is assembled from rows
+    that came back. PRD §18's requirement is that answers cite platform objects
+    and invent nothing, and the only reliable way to get that is to make the
+    model incapable of producing prose about data it has not been handed.
+    """
+
+    resource: str = Field(
+        description=(
+            "Which endpoint answers this: discover, processes, process_detail, "
+            "timeline, journal, alerts, capabilities, confluence, assets, "
+            "comparison, counterfactuals, evidence."
+        )
+    )
+    subject_id: str | None = Field(
+        default=None, description="The node in view, where the question is about one."
+    )
+    filters: list[QueryFilter] = Field(default_factory=list)
+    limit: int = Field(default=20, ge=1, le=100)
+    reasoning: str = Field(
+        min_length=1,
+        description="Why this read answers the question, in one sentence.",
+    )
+
+
+class AssistantInput(AgentInput):
+    question: str
+    #: Where the user asked from. §22 makes the assistant context-aware — the
+    #: same question means different things on a Process page and an Asset page.
+    page: str = "discover"
+    subject_id: str | None = None
+    subject_label: str | None = None
+    available_resources: list[str] = Field(default_factory=list)
+
+
+class AssistantOutput(AgentOutput):
+    """A plan, or a refusal. Never an answer.
+
+    There is deliberately no free-text answer field. §2.5 says chat is an
+    interface rather than the product, and a model that can emit prose about the
+    graph will eventually emit prose the graph does not support. The narration
+    is assembled by code from the rows the plan returned.
+    """
+
+    plan: QueryPlan | None = None
+    unsupported_reason: str | None = Field(
+        default=None,
+        description=(
+            "Why the question cannot be answered from the graph. Saying so is a "
+            "valid outcome and a better one than a plan that returns something "
+            "adjacent."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _plan_or_reason(self) -> Self:
+        if (self.plan is None) == (self.unsupported_reason is None):
+            raise ValueError("give exactly one of plan or unsupported_reason")
+        return self

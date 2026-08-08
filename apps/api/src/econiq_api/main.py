@@ -33,6 +33,7 @@ from econiq_api.deps import AppState
 from econiq_api.routers import (
     archetypes,
     assets,
+    assistant,
     capabilities,
     discover,
     events,
@@ -42,6 +43,7 @@ from econiq_api.routers import (
     monitoring,
     processes,
     runs,
+    stream,
     underwriting,
     workspace,
 )
@@ -110,6 +112,7 @@ def create_app(settings: DatabaseSettings | None = None) -> FastAPI:
     for router in (
         health.router,
         archetypes.router,
+        assistant.router,
         discover.router,
         processes.router,
         events.router,
@@ -119,6 +122,7 @@ def create_app(settings: DatabaseSettings | None = None) -> FastAPI:
         graph.router,
         monitoring.router,
         runs.router,
+        stream.router,
         underwriting.router,
         workspace.router,
     ):

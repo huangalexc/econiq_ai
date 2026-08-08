@@ -29,6 +29,13 @@ from econiq_agents.asset_scoring_stage import (
     AssetScoringStage,
 )
 from econiq_agents.asset_stage import AssetDiscoveryStage, AssetOutcome
+from econiq_agents.assistant import (
+    NEEDS_SUBJECT,
+    OPERATORS,
+    RESOURCES,
+    PlanEvaluator,
+    ResearchAssistantAgent,
+)
 from econiq_agents.capability_agents import (
     BindingClarityEvaluator,
     BottleneckIdentificationAgent,
@@ -186,11 +193,14 @@ __all__ = [
     "EVENT_RESOLUTION_V1",
     "EVENT_SIGNIFICANCE_V1",
     "JUDGED_AXES",
+    "NEEDS_SUBJECT",
+    "OPERATORS",
     "PROCESS_ARCHETYPE_V1",
     "PROCESS_DISCOVERY_V1",
     "PROCESS_STATE_V1",
     "PROCESS_UPDATE_V1",
     "REFERENCE_UNIVERSE",
+    "RESOURCES",
     "UNAVAILABLE_AXES",
     "AgentRunRecorder",
     "AppliedArchetype",
@@ -256,6 +266,7 @@ __all__ = [
     "PersistedExposures",
     "PersistedProcess",
     "PersistedRequirement",
+    "PlanEvaluator",
     "PlausibilityEvaluator",
     "ProcessArchetypeAgent",
     "ProcessCriticAgent",
@@ -274,6 +285,7 @@ __all__ = [
     "RecordedState",
     "ReferenceInstrument",
     "RequirementStructureEvaluator",
+    "ResearchAssistantAgent",
     "ResolvedAsset",
     "ResolvedCapability",
     "ResolvedEvent",

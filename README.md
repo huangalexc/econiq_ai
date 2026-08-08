@@ -78,6 +78,8 @@ not the measurement.
 | #29 Comparison matrix | side by side per Capability; weights belong to the reader, gaps say why |
 | #30 Underwriting | why this / why now / why not, the last fed by the Counterfactual agent |
 | #19 Auth & workspaces | Clerk sessions, workspace-scoped watchlists — the graph itself stays public |
+| #33 Research assistant | questions become structured reads; the model never writes the answer |
+| #34 Live updates | SSE off the transactional outbox, carrying invalidations rather than data |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000
@@ -124,8 +126,10 @@ price source Tiingo does not cover. A labelled gap beats a plausible number —
 once a guessed valuation and a measured one both render as numbers, nobody can
 tell them apart.
 
-Still open: watchlists and workspaces (#19), the grounded assistant (#33) and
-live updates (#34).
+**Phase 1 is complete.** Phase 2 is the historical engine (#35–#46).
+
+Open follow-ups from Phase 1: fundamentals and commodity prices (#75, #77 note
+the gaps), and the Process causal mechanism (#74).
 
 ## Quick start
 

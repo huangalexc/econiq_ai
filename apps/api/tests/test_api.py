@@ -1076,3 +1076,59 @@ async def test_the_why_not_panel_is_empty_before_the_agent_has_run(client, graph
     body = (await client.get(f"/api/processes/{graph['process']}/counterfactuals")).json()
 
     assert body == []
+
+
+async def test_the_stream_pushes_invalidations_not_data(client, session_factory):
+    """#34. Pushing rows would give two paths to every value — the push and the
+    fetch — and they diverge the first time one is read at a different as_of."""
+    from econiq_data_models import OutboxEvent, OutboxStatus
+
+    async with session_factory() as session:
+        session.add(
+            OutboxEvent(
+                outbox_event_id=uuid.uuid4(),
+                event_name="process.updated",
+                subject_id=uuid.uuid4(),
+                subject_type=EntityType.PROCESS,
+                payload={},
+                occurred_at=datetime.now(UTC),
+                status=OutboxStatus.PENDING,
+            )
+        )
+        await session.commit()
+
+    from econiq_api.routers.stream import INVALIDATES
+
+    # The contract is a list of caches to drop, never the changed row.
+    assert INVALIDATES["process.updated"] == ("discover", "process", "journal", "alerts")
+    assert "payload" not in str(INVALIDATES)
+
+
+async def test_only_meaningful_domain_events_wake_a_screen(client):
+    """A stream that fires on every internal step trains people to ignore it."""
+    from econiq_api.routers.stream import INVALIDATES
+
+    assert "event.created" not in INVALIDATES  # ungated, pre-propagation
+    assert "event.propagated" in INVALIDATES
+
+
+async def test_the_assistant_says_it_is_not_wired_up_rather_than_faking_it(client, monkeypatch):
+    """#33. A command bar that silently answers from a fixture is worse than one
+    that says it has no provider."""
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+    body = (await client.get("/api/assistant/ask", params={"question": "what changed?"})).json()
+
+    assert body["results"] == []
+    assert "ANTHROPIC_API_KEY" in body["unsupported_reason"]
+
+
+async def test_the_assistant_response_has_no_prose_field(client):
+    """§2.5 and PRD §18: the model emits a plan, code runs it, and the answer is
+    the rows. There is nowhere for invented narration to live."""
+    spec = (await client.get("/openapi.json")).json()
+    schema = spec["components"]["schemas"]["AssistantAnswer"]["properties"]
+
+    assert "answer" not in schema
+    assert "narrative" not in schema
+    assert set(schema) >= {"resource", "results", "unsupported_reason"}

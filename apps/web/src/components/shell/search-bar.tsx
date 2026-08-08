@@ -2,29 +2,38 @@
 
 import { Command } from "cmdk";
 import { Search } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+import { useQuery } from "@tanstack/react-query";
+
+import { api } from "@/lib/api/client";
+import { useAsOf } from "@/lib/as-of";
+import { keyFor } from "@/lib/query";
 
 import { ALL_NAV_ITEMS } from "./navigation";
 
 /**
  * The research command bar (ui_concept §4).
  *
- * §4 wants ontology-aware natural language — "which Assets have exposure to
- * both AI and grid modernization?". That needs the grounded assistant (#33) and
- * the search index behind it, neither of which exists yet.
+ * Two things behind one input: navigation, and the grounded assistant (#33).
+ * Anything that matches a screen navigates; anything that reads like a question
+ * is offered to the assistant, which translates it into a read of the graph.
  *
- * What ships here is the *frame*: the bar, the ⌘K affordance, and navigation.
- * The one deliberate choice is what it does with a question it cannot answer —
- * it says so, and names the issue. The alternative is a bar that accepts a
- * sentence and returns nothing, which reads as a broken search rather than an
- * unbuilt one, and teaches people to stop typing questions before the feature
- * that answers them arrives.
+ * The assistant never writes the answer. It picks which stored read answers the
+ * question, code runs that read, and what appears below is the rows — §4 says
+ * "the LLM should not invent the underlying data", and the reliable way to
+ * guarantee that is for the prose path not to exist.
+ *
+ * The page path travels with the question, because §22 makes the assistant
+ * context-aware: "why did confidence increase this week?" means something
+ * different on a Process screen than on Discover.
  */
 export function SearchBar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
+  const [asking, setAsking] = useState<string | null>(null);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -68,11 +77,13 @@ export function SearchBar() {
         <Command.List className="max-h-80 overflow-y-auto p-2">
           <Command.Empty className="px-2 py-6 text-center text-sm text-ink-muted">
             {looksLikeAQuestion ? (
-              <>
-                Natural-language research questions need the grounded assistant,
-                which arrives in <span className="text-ink">#33</span>. Until
-                then this bar navigates.
-              </>
+              <button
+                type="button"
+                onClick={() => setAsking(value)}
+                className="text-accent underline underline-offset-2"
+              >
+                Ask the graph: &ldquo;{value}&rdquo;
+              </button>
             ) : (
               "No match."
             )}
@@ -104,7 +115,77 @@ export function SearchBar() {
             ))}
           </Command.Group>
         </Command.List>
+        {asking ? <Answer question={asking} onClose={() => setAsking(null)} /> : null}
       </Command.Dialog>
     </>
+  );
+}
+
+/**
+ * The assistant's reply (#33; PRD §18).
+ *
+ * Renders the *rows the plan returned*, plus the reason the plan was chosen.
+ * There is no narration, because the API has no field to put one in: the model
+ * decides which read answers the question and code runs it, so everything on
+ * screen came out of the graph.
+ */
+function Answer({ question, onClose }: { question: string; onClose: () => void }) {
+  const { asOf } = useAsOf();
+  const pathname = usePathname();
+  const answer = useQuery({
+    queryKey: keyFor(["ask", question, pathname], { asOf }),
+    queryFn: ({ signal }) =>
+      api.ask({ asOf, query: { question, page: pathname }, signal }),
+  });
+
+  return (
+    <div className="border-t border-border px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs text-ink-subtle">{question}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 text-xs text-ink-subtle hover:text-ink"
+        >
+          close
+        </button>
+      </div>
+
+      {answer.isPending ? (
+        <p className="mt-2 text-sm text-ink-muted">Working out which read answers that…</p>
+      ) : answer.isError ? (
+        <p className="mt-2 text-sm text-contradicts">Could not reach the assistant.</p>
+      ) : answer.data.unsupported_reason ? (
+        <p className="mt-2 text-sm text-needs-review">
+          {answer.data.unsupported_reason}
+        </p>
+      ) : (
+        <div className="mt-2">
+          <p className="text-xs text-ink-muted">
+            Read <span className="font-mono text-ink">{answer.data.resource}</span> —{" "}
+            {answer.data.reasoning}
+          </p>
+          {(answer.data.results ?? []).length === 0 ? (
+            <p className="mt-2 text-sm text-ink-subtle">
+              That read returned nothing. The question is answerable; the graph
+              has no rows for it yet.
+            </p>
+          ) : (
+            <ul className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
+              {answer.data.results?.slice(0, 20).map((row, index) => (
+                <li key={index} className="text-ink-muted">
+                  {String(
+                    (row as Record<string, unknown>).headline ??
+                      (row as Record<string, unknown>).summary ??
+                      (row as Record<string, unknown>).challenged_assumption ??
+                      JSON.stringify(row).slice(0, 120),
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

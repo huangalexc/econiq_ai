@@ -61,6 +61,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/assistant/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ask */
+        get: operations["ask_api_assistant_ask_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/discover": {
         parameters: {
             query?: never;
@@ -689,6 +706,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream
+         * @description An SSE feed of what changed.
+         *
+         *     Resumable. The browser sends `Last-Event-ID` on reconnect and the cursor
+         *     picks up from there, so a laptop closing its lid does not silently miss the
+         *     State transition it was open to watch.
+         */
+        get: operations["stream_api_stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/comparison": {
         parameters: {
             query?: never;
@@ -1046,6 +1087,29 @@ export interface components {
             best_weight: number;
             /** Paths */
             paths?: components["schemas"]["DiscoveryPathOut"][];
+        };
+        /** AssistantAnswer */
+        AssistantAnswer: {
+            /** Question */
+            question: string;
+            /** Resource */
+            resource?: string | null;
+            /** Reasoning */
+            reasoning?: string | null;
+            /**
+             * Unsupported Reason
+             * @description Why the graph cannot answer. A stated gap is a better answer than results adjacent to the question, which the reader cannot distinguish from an answer.
+             */
+            unsupported_reason?: string | null;
+            /** Results */
+            results?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
         };
         /**
          * BottleneckKind
@@ -2376,6 +2440,41 @@ export interface operations {
             };
         };
     };
+    ask_api_assistant_ask_get: {
+        parameters: {
+            query: {
+                question: string;
+                page?: string;
+                subject_id?: string | null;
+                /** @description Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssistantAnswer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     discover_api_discover_get: {
         parameters: {
             query?: {
@@ -3420,6 +3519,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueueDepthOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_api_stream_get: {
+        parameters: {
+            query?: {
+                /** @description Resume from this event id. */
+                since?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

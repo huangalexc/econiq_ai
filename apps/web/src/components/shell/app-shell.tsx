@@ -1,6 +1,7 @@
 "use client";
 
 import { useAsOf } from "@/lib/as-of";
+import { useLiveUpdates } from "@/lib/live";
 import { cn } from "@/lib/utils";
 
 import { SessionControl } from "./session-control";
@@ -12,6 +13,8 @@ import { ThemeToggle } from "./theme-toggle";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { isHistorical, asOf } = useAsOf();
+  // One subscription for the whole app rather than one per screen (#34).
+  useLiveUpdates();
 
   return (
     <div className="flex h-dvh flex-col">

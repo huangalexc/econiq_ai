@@ -634,3 +634,44 @@ this scorecard exists to avoid.\
 """,
     )
 )
+
+
+EVIDENCE_INDEPENDENCE_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="evidence_independence",
+        version="1.0.0",
+        description="Cross-Event evidence dependence (agent doc §10.2).",
+        template="""\
+Decide which of the supplied pairs of Events rest on the same underlying \
+observation.
+
+Twenty articles repeating one report are not twenty pieces of evidence. Pairs \
+that share a document or a publisher have already been settled and are not \
+shown to you. What remains are the cases only reading the content can decide.
+
+Report a dependence only where you find one, using one of:
+
+    shared_source           both rest on the same primary document or \
+statement, reported separately. Two outlets writing up one press release are \
+one observation.
+    derivative_reporting    one is reporting the other rather than observing \
+independently. Look for attribution, and for a later item that adds nothing the \
+earlier one did not contain.
+    repeated_claim          the same assertion restated with no new observation \
+behind it. A company repeating its own guidance is not new evidence of that \
+guidance.
+
+Say nothing about pairs you find independent. Independence is the default; a \
+list confirming it would be as long as the input and would tell nobody anything.
+
+Two Events about the same subject are not dependent for that reason. A separate \
+observation of the same situation is exactly what independent corroboration is, \
+and marking it dependent destroys the signal this analysis exists to protect. \
+Require evidence that one rests on the other, not merely that they agree.
+
+For each dependence give the direction — which Event is the source and which \
+leans on it — the kind, a rationale naming what made you decide, and your \
+confidence.\
+""",
+    )
+)

@@ -20,6 +20,7 @@ from econiq_ontology import (
     EntityType,
     EpistemicStatus,
     EventType,
+    EvidenceDependenceKind,
     ExposureKind,
     ExtractionStatus,
     LogicOperator,
@@ -136,5 +137,6 @@ VALUE_BASIS = pg_enum(ValueBasis, "value_basis")
 JOURNAL_ENTRY_KIND = pg_enum(JournalEntryKind, "journal_entry_kind")
 CRITIQUE_KIND = pg_enum(CritiqueKind, "critique_kind")
 CRITIQUE_STATUS = pg_enum(CritiqueStatus, "critique_status")
+EVIDENCE_DEPENDENCE_KIND = pg_enum(EvidenceDependenceKind, "evidence_dependence_kind")
 WORK_STATUS = pg_enum(WorkStatus, "work_status")
 OUTBOX_STATUS = pg_enum(OutboxStatus, "outbox_status")

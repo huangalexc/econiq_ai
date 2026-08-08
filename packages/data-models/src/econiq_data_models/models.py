@@ -27,6 +27,7 @@ from econiq_ontology import (
     EntityType,
     EpistemicStatus,
     EventType,
+    EvidenceDependenceKind,
     ExposureKind,
     ExtractionStatus,
     LogicOperator,
@@ -1079,6 +1080,45 @@ class Counterfactual(Base, ObservationMixin):
         Index("ix_counterfactuals_process", "process_id", "superseded_at", "observed_at"),
         CheckConstraint("plausibility >= 0 AND plausibility <= 10", name="plausibility_range"),
         CheckConstraint("severity_if_true >= 0 AND severity_if_true <= 10", name="severity_range"),
+    )
+
+
+class EvidenceDependence(Base, ObservationMixin):
+    """One reason two pieces of evidence are not independent (issue #67).
+
+    Directed: ``dependent_event_id`` leans on ``source_event_id``. The direction
+    matters for derivative reporting — a wire story and the paper that picked it
+    up are not symmetric, and the effective source count should keep the
+    original rather than whichever row was written first.
+
+    Stored as its own table rather than as a `derived_from` edge because the
+    kind is computed on: the effective independent-source count comes from the
+    connected components of this graph, and a kind kept in an edge's prose
+    rationale could not be read by the code that needs it.
+    """
+
+    __tablename__ = "evidence_dependencies"
+
+    evidence_dependence_id: Mapped[uuid.UUID] = uuid_pk()
+    process_id: Mapped[uuid.UUID] = _node_fk()
+    source_event_id: Mapped[uuid.UUID] = _node_fk()
+    dependent_event_id: Mapped[uuid.UUID] = _node_fk()
+    kind: Mapped[EvidenceDependenceKind] = mapped_column(
+        e.EVIDENCE_DEPENDENCE_KIND, nullable=False, index=True
+    )
+    rationale: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence: Mapped[float] = _confidence()
+    detected_by: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        comment="'computed' or 'judged' — whether code or an agent found it.",
+    )
+    superseded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    agent_run_id: Mapped[uuid.UUID | None] = _run_fk()
+
+    __table_args__ = (
+        Index("ix_evidence_dependencies_process", "process_id", "superseded_at"),
+        CheckConstraint("source_event_id <> dependent_event_id", name="no_self_dependence"),
     )
 
 

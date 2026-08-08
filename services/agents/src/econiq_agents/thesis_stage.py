@@ -29,6 +29,7 @@ from econiq_data_models import (
     Document,
     Event,
     EventClaim,
+    EvidenceDependence,
     EvidenceLink,
     Process,
     ProcessState,
@@ -55,6 +56,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from econiq_agents import thesis_measures
 from econiq_agents.counterfactual_agent import CounterfactualAgent
+from econiq_agents.dependence import Dependence, EvidenceItem, effective_sources
 from econiq_agents.persistence import AgentRunRecorder
 from econiq_agents.prompts import COUNTERFACTUAL_V1, THESIS_SCORING_V1
 from econiq_agents.scoring import ScorecardWriter
@@ -452,10 +454,57 @@ class ThesisStage:
             recent_count=sum(
                 1 for link, _ in supporting if moment - link.created_at <= RECENT_WINDOW
             ),
-            independent_sources=sum(event.independent_source_count for _, event in supporting),
+            # The effective count where a dependence graph exists (#67),
+            # falling back to the naive sum. Four Events all citing one filing
+            # are one source, and summing per-Event counts would say four.
+            independent_sources=await self._independent_sources(
+                session, process_id, [event for _, event in supporting]
+            ),
             document_count=documents,
             falsification_risk=await self._falsification_risk(session, process_id),
         )
+
+    async def _independent_sources(
+        self, session: AsyncSession, process_id: uuid.UUID, events: Sequence[Event]
+    ) -> int:
+        """Effective independent sources, collapsing the dependence graph."""
+        naive = sum(event.independent_source_count for event in events)
+        dependencies = (
+            (
+                await session.execute(
+                    select(EvidenceDependence).where(
+                        EvidenceDependence.process_id == process_id,
+                        EvidenceDependence.superseded_at.is_(None),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if not dependencies:
+            return naive
+
+        items = [
+            EvidenceItem(
+                event_id=event.event_id,
+                title=event.title,
+                independent_source_count=event.independent_source_count,
+            )
+            for event in events
+        ]
+        edges = [
+            Dependence(
+                source_event_id=row.source_event_id,
+                dependent_event_id=row.dependent_event_id,
+                kind=row.kind,
+                rationale=row.rationale,
+                confidence=row.confidence,
+                detected_by=row.detected_by,
+            )
+            for row in dependencies
+        ]
+        total, _ = effective_sources(items, edges)
+        return total
 
     async def _falsification_risk(
         self, session: AsyncSession, process_id: uuid.UUID

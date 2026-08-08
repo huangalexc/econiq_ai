@@ -214,6 +214,31 @@ class CritiqueStatus(StrEnum):
     """It turned out to be right — the thesis was damaged."""
 
 
+class EvidenceDependenceKind(StrEnum):
+    """How two pieces of evidence fail to be independent (agent doc §10.2).
+
+    Ontology §47 says twenty articles repeating one report are not twenty
+    pieces of evidence. Within one Event, syndication is detectable from text
+    overlap. *Across* Events it is not: two outlets can report the same company
+    statement in entirely different words, days apart, and the observation
+    behind them is still one observation.
+
+    The kinds are ordered by how much they reduce independence. A shared source
+    means one observation; derivative reporting means one observation plus
+    commentary; a repeated claim means the same assertion made twice, which may
+    or may not rest on the same observation.
+    """
+
+    SHARED_SOURCE = "shared_source"
+    """Both rest on the same primary document or statement."""
+
+    DERIVATIVE_REPORTING = "derivative_reporting"
+    """One reports the other rather than observing independently."""
+
+    REPEATED_CLAIM = "repeated_claim"
+    """The same assertion restated, without a new observation behind it."""
+
+
 class AssetClass(StrEnum):
     """Ontology §14. V1 expresses theses through the underlying asset only —
     options and derivatives are explicitly out of scope."""

@@ -14,6 +14,7 @@ from typing import Self
 from econiq_ontology import (
     Confidence,
     CritiqueKind,
+    EvidenceDependenceKind,
     ProcessArchetype,
     ProcessStateLabel,
     Score10,
@@ -461,3 +462,55 @@ class ThesisScoringOutput(AgentOutput):
         if duplicates:
             raise ValueError(f"axis scored more than once: {sorted(d.value for d in duplicates)}")
         return self
+
+
+# --------------------------------------------------------------------------- #
+# Evidence Independence agent (issue #67, agent doc §10.2)
+# --------------------------------------------------------------------------- #
+
+
+class EvidencePair(AgentIO):
+    """Two Events the structural pass could not settle."""
+
+    source_event_id: str
+    dependent_event_id: str
+
+
+class JudgedDependence(AgentIO):
+    """One pair the agent found dependent, and why."""
+
+    source_event_id: str
+    dependent_event_id: str
+    kind: EvidenceDependenceKind
+    rationale: str = Field(min_length=1)
+    confidence: Confidence
+
+
+class EvidenceIndependenceInput(AgentInput):
+    process_name: str
+    events: dict[str, str] = Field(default_factory=dict, description="Event id to title.")
+    event_claims: dict[str, list[str]] = Field(
+        default_factory=dict, description="Event id to the Claim texts behind it."
+    )
+    event_publishers: dict[str, list[str]] = Field(default_factory=dict)
+    undecided: list[EvidencePair] = Field(
+        default_factory=list,
+        description=(
+            "Only the pairs code could not settle. Pairs sharing a document or "
+            "a publisher are already decided and are not sent — a shared "
+            "primary source is not a matter of opinion."
+        ),
+    )
+
+
+class EvidenceIndependenceOutput(AgentOutput):
+    """Dependence found among the undecided pairs.
+
+    Only dependence is reported. Independence is the default and needs no
+    assertion: an agent asked to affirm independence would produce a list as
+    long as the input, and the eval metric that matters is the false-independence
+    rate, which is measured by what is *missing* here rather than by what is
+    claimed.
+    """
+
+    dependencies: list[JudgedDependence] = Field(default_factory=list)

@@ -67,6 +67,13 @@ from econiq_agents.critic_agent import (
     coverage_of,
 )
 from econiq_agents.critic_stage import CritiqueOutcome, ProcessCritiqueStage
+from econiq_agents.dependence import (
+    Dependence,
+    EvidenceItem,
+    effective_sources,
+    structural_dependencies,
+    undecided_pairs,
+)
 from econiq_agents.document_agents import (
     ClaimExtractionAgent,
     DocumentClassifierAgent,
@@ -102,6 +109,8 @@ from econiq_agents.independence import (
     jaccard,
     shingles,
 )
+from econiq_agents.independence_agent import EvidenceIndependenceAgent
+from econiq_agents.independence_stage import IndependenceOutcome, IndependenceStage
 from econiq_agents.persistence import (
     AgentRunRecorder,
     ClaimPersistResult,
@@ -202,6 +211,7 @@ __all__ = [
     "CounterfactualAgent",
     "CoverageReport",
     "CritiqueOutcome",
+    "Dependence",
     "DiversityEvaluator",
     "DocumentClassifierAgent",
     "DocumentExtractionStage",
@@ -212,6 +222,8 @@ __all__ = [
     "EventResolutionStage",
     "EventSignificanceAgent",
     "EventWriter",
+    "EvidenceIndependenceAgent",
+    "EvidenceItem",
     "ExposureWriter",
     "ExtractionOutcome",
     "FalsifiabilityEvaluator",
@@ -220,6 +232,8 @@ __all__ = [
     "IllegalEdgeError",
     "Independence",
     "IndependenceAssessment",
+    "IndependenceOutcome",
+    "IndependenceStage",
     "InstrumentBreadthEvaluator",
     "LayerBoundaryEvaluator",
     "MeasuredFeatureEvaluator",
@@ -271,6 +285,7 @@ __all__ = [
     "cosine_similarity",
     "coverage_of",
     "duplicate_suppression_rate",
+    "effective_sources",
     "evaluate_clustering",
     "independent_support",
     "jaccard",
@@ -283,4 +298,6 @@ __all__ = [
     "resolve_span",
     "shingles",
     "slugify",
+    "structural_dependencies",
+    "undecided_pairs",
 ]

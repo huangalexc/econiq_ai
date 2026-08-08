@@ -7,6 +7,7 @@ dependencies = [
     "econiq-ontology",
     "econiq-data-models",
     "econiq-graph",
+    "econiq-agents",
     "econiq-orchestration",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
@@ -16,6 +17,7 @@ dependencies = [
 econiq-ontology = { workspace = true }
 econiq-data-models = { workspace = true }
 econiq-graph = { workspace = true }
+econiq-agents = { workspace = true }
 econiq-orchestration = { workspace = true }
 
 [build-system]

@@ -2698,6 +2698,136 @@
           }
         }
       }
+    },
+    "/api/comparison": {
+      "get": {
+        "tags": [
+          "underwriting"
+        ],
+        "summary": "Compare",
+        "description": "\u00a713's matrix for the Assets expressing one Capability.\n\nDeliberately no overall score. \u00a713 asks that users change ranking weights\n\"without changing the underlying scores\", which puts the weighting on the\nreader's side of the line \u2014 a server-computed overall would freeze one\nweighting into the data and every client would end up arguing with it.",
+        "operationId": "compare_api_comparison_get",
+        "parameters": [
+          {
+            "name": "capability_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Capability Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetComparisonOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processes/{process_id}/counterfactuals": {
+      "get": {
+        "tags": [
+          "underwriting"
+        ],
+        "summary": "Counterfactuals",
+        "description": "The \"Why not?\" panel (#30, ui_concept \u00a714.3).\n\n\u00a714.3 requires the underwriting screen to surface disconfirming evidence\nexplicitly, and its example is a list of alternative worlds. These are that\nlist, produced by an agent whose output schema has no field in which to\nconclude the thesis is safe (#66) \u2014 so the panel cannot quietly become a\nsection that reassures.\n\nSuperseded sets are excluded: a world the thesis has already outlived is\npart of the record but not part of the current case.",
+        "operationId": "counterfactuals_api_processes__process_id__counterfactuals_get",
+        "parameters": [
+          {
+            "name": "process_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Process Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CounterfactualOut"
+                  },
+                  "title": "Response Counterfactuals Api Processes  Process Id  Counterfactuals Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2945,6 +3075,42 @@
         ],
         "title": "AssetClass",
         "description": "Ontology \u00a714. V1 expresses theses through the underlying asset only \u2014\noptions and derivatives are explicitly out of scope."
+      },
+      "AssetComparisonOut": {
+        "properties": {
+          "capability": {
+            "$ref": "#/components/schemas/NodeRef"
+          },
+          "dimensions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Dimensions"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonColumnOut"
+            },
+            "type": "array",
+            "title": "Columns"
+          },
+          "unavailable": {
+            "items": {
+              "$ref": "#/components/schemas/UnavailableInputOut"
+            },
+            "type": "array",
+            "title": "Unavailable",
+            "description": "Analyses no source in this deployment supports."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "capability"
+        ],
+        "title": "AssetComparisonOut",
+        "description": "\u00a713's matrix, with its holes labelled.\n\nNo overall score. \u00a713 shows an \"Overall Expression\" row and asks that users\nbe able to change ranking weights without changing the underlying scores \u2014\nwhich means the weighting belongs to the reader, not to the API. A server-\ncomputed overall would be one weighting frozen into the data, and every\nclient would then be arguing with it."
       },
       "AssetDetailOut": {
         "properties": {
@@ -3557,6 +3723,141 @@
         ],
         "title": "ClaimOut"
       },
+      "ComparisonCellOut": {
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "title": "Dimension"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          },
+          "inputs": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Inputs"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable Reason",
+            "description": "Why this cell is empty. A gap with a reason is more informative than a plausible number: once both render as numbers the reader cannot tell a measured multiple from a guessed one."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dimension"
+        ],
+        "title": "ComparisonCellOut",
+        "description": "One Asset's value on one dimension, or the reason there isn't one."
+      },
+      "ComparisonColumnOut": {
+        "properties": {
+          "asset": {
+            "$ref": "#/components/schemas/NodeRef"
+          },
+          "ticker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticker"
+          },
+          "asset_class": {
+            "$ref": "#/components/schemas/AssetClass"
+          },
+          "exposure_magnitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exposure Magnitude",
+            "description": "How strongly this Asset expresses the Capability."
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonCellOut"
+            },
+            "type": "array",
+            "title": "Cells"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProvenanceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "asset",
+          "asset_class"
+        ],
+        "title": "ComparisonColumnOut"
+      },
       "ConfluenceHitOut": {
         "properties": {
           "capability": {
@@ -3625,6 +3926,91 @@
         ],
         "title": "ConfluenceResultOut",
         "description": "\u00a711's AND semantics, explicitly.\n\n``require_all`` is the difference between \"Capabilities relevant to any of\nthese Processes\" \u2014 which is a union and mostly noise \u2014 and \"Capabilities\nevery one of them needs\", which is the question ui_concept \u00a711 poses and the\nreason confluence is a distinct feature rather than a filter."
+      },
+      "CounterfactualOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "process_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Process Id"
+          },
+          "challenged_assumption": {
+            "type": "string",
+            "title": "Challenged Assumption"
+          },
+          "alternative_world": {
+            "type": "string",
+            "title": "Alternative World"
+          },
+          "affected_links": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Affected Links"
+          },
+          "assets_harmed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Assets Harmed"
+          },
+          "observable_indicators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Observable Indicators",
+            "description": "What would be seen if this were the real world."
+          },
+          "plausibility": {
+            "type": "number",
+            "title": "Plausibility"
+          },
+          "severity_if_true": {
+            "type": "number",
+            "title": "Severity If True"
+          },
+          "is_most_dangerous": {
+            "type": "boolean",
+            "title": "Is Most Dangerous"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProvenanceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "process_id",
+          "challenged_assumption",
+          "alternative_world",
+          "plausibility",
+          "severity_if_true",
+          "is_most_dangerous",
+          "observed_at"
+        ],
+        "title": "CounterfactualOut",
+        "description": "An alternative world the thesis has to survive.\n\n\u00a714.3 requires the underwriting screen to \"explicitly surface disconfirming\nevidence\", and its example list is a set of alternative worlds. These are\nthat list, produced by the Counterfactual agent (#66) rather than written by\nhand."
       },
       "CritiqueKind": {
         "type": "string",

@@ -689,6 +689,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare
+         * @description §13's matrix for the Assets expressing one Capability.
+         *
+         *     Deliberately no overall score. §13 asks that users change ranking weights
+         *     "without changing the underlying scores", which puts the weighting on the
+         *     reader's side of the line — a server-computed overall would freeze one
+         *     weighting into the data and every client would end up arguing with it.
+         */
+        get: operations["compare_api_comparison_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/processes/{process_id}/counterfactuals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Counterfactuals
+         * @description The "Why not?" panel (#30, ui_concept §14.3).
+         *
+         *     §14.3 requires the underwriting screen to surface disconfirming evidence
+         *     explicitly, and its example is a list of alternative worlds. These are that
+         *     list, produced by an agent whose output schema has no field in which to
+         *     conclude the thesis is safe (#66) — so the panel cannot quietly become a
+         *     section that reassures.
+         *
+         *     Superseded sets are excluded: a world the thesis has already outlived is
+         *     part of the record but not part of the current case.
+         */
+        get: operations["counterfactuals_api_processes__process_id__counterfactuals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -801,6 +855,28 @@ export interface components {
          * @enum {string}
          */
         AssetClass: "common_stock" | "etf" | "commodity" | "currency" | "bond" | "index";
+        /**
+         * AssetComparisonOut
+         * @description §13's matrix, with its holes labelled.
+         *
+         *     No overall score. §13 shows an "Overall Expression" row and asks that users
+         *     be able to change ranking weights without changing the underlying scores —
+         *     which means the weighting belongs to the reader, not to the API. A server-
+         *     computed overall would be one weighting frozen into the data, and every
+         *     client would then be arguing with it.
+         */
+        AssetComparisonOut: {
+            capability: components["schemas"]["NodeRef"];
+            /** Dimensions */
+            dimensions?: string[];
+            /** Columns */
+            columns?: components["schemas"]["ComparisonColumnOut"][];
+            /**
+             * Unavailable
+             * @description Analyses no source in this deployment supports.
+             */
+            unavailable?: components["schemas"]["UnavailableInputOut"][];
+        };
         /** AssetDetailOut */
         AssetDetailOut: {
             /**
@@ -1006,6 +1082,46 @@ export interface components {
             provenance?: components["schemas"]["ProvenanceOut"] | null;
         };
         /**
+         * ComparisonCellOut
+         * @description One Asset's value on one dimension, or the reason there isn't one.
+         */
+        ComparisonCellOut: {
+            /** Dimension */
+            dimension: string;
+            /** Value */
+            value?: number | null;
+            /** Confidence */
+            confidence?: number | null;
+            /** Method */
+            method?: string | null;
+            /** Inputs */
+            inputs?: {
+                [key: string]: number;
+            };
+            /** Rationale */
+            rationale?: string | null;
+            /**
+             * Unavailable Reason
+             * @description Why this cell is empty. A gap with a reason is more informative than a plausible number: once both render as numbers the reader cannot tell a measured multiple from a guessed one.
+             */
+            unavailable_reason?: string | null;
+        };
+        /** ComparisonColumnOut */
+        ComparisonColumnOut: {
+            asset: components["schemas"]["NodeRef"];
+            /** Ticker */
+            ticker?: string | null;
+            asset_class: components["schemas"]["AssetClass"];
+            /**
+             * Exposure Magnitude
+             * @description How strongly this Asset expresses the Capability.
+             */
+            exposure_magnitude?: number | null;
+            /** Cells */
+            cells?: components["schemas"]["ComparisonCellOut"][];
+            provenance?: components["schemas"]["ProvenanceOut"] | null;
+        };
+        /**
          * ConfluenceHitOut
          * @description A Capability several selected Processes all reach.
          */
@@ -1042,6 +1158,52 @@ export interface components {
             require_all: boolean;
             /** Capabilities */
             capabilities?: components["schemas"]["ConfluenceHitOut"][];
+        };
+        /**
+         * CounterfactualOut
+         * @description An alternative world the thesis has to survive.
+         *
+         *     §14.3 requires the underwriting screen to "explicitly surface disconfirming
+         *     evidence", and its example list is a set of alternative worlds. These are
+         *     that list, produced by the Counterfactual agent (#66) rather than written by
+         *     hand.
+         */
+        CounterfactualOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Process Id
+             * Format: uuid
+             */
+            process_id: string;
+            /** Challenged Assumption */
+            challenged_assumption: string;
+            /** Alternative World */
+            alternative_world: string;
+            /** Affected Links */
+            affected_links?: string[];
+            /** Assets Harmed */
+            assets_harmed?: string[];
+            /**
+             * Observable Indicators
+             * @description What would be seen if this were the real world.
+             */
+            observable_indicators?: string[];
+            /** Plausibility */
+            plausibility: number;
+            /** Severity If True */
+            severity_if_true: number;
+            /** Is Most Dangerous */
+            is_most_dangerous: boolean;
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            provenance?: components["schemas"]["ProvenanceOut"] | null;
         };
         /**
          * CritiqueKind
@@ -3136,6 +3298,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueueDepthOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compare_api_comparison_get: {
+        parameters: {
+            query: {
+                capability_id: string;
+                /** @description Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetComparisonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    counterfactuals_api_processes__process_id__counterfactuals_get: {
+        parameters: {
+            query?: {
+                /** @description Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path: {
+                process_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CounterfactualOut"][];
                 };
             };
             /** @description Validation Error */

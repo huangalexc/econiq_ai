@@ -74,6 +74,9 @@ not the measurement.
 | #77 Market data | `services/market` — Tiingo daily and FX, storing raw *and* adjusted closes with both clocks |
 | #75 Asset Quant | reproducible price metrics computed by code; five of §8.3's nine analyses named as unsourceable |
 | #76 Asset Quality | qualitative axes judged per Capability, with valuation language refused |
+| #28 Asset page | the discovery chain, rendered as a chain, with the rationale on every edge |
+| #29 Comparison matrix | side by side per Capability; weights belong to the reader, gaps say why |
+| #30 Underwriting | why this / why now / why not, the last fed by the Counterfactual agent |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000
@@ -113,8 +116,15 @@ alerts that existed then, and one whose underlying change was later superseded
 stops existing rather than lingering. Watchlist filtering plugs into the same
 endpoint once users exist (#19).
 
-Still open: watchlists need users (#19); Asset comparison needs the Quant and
-Quality agents (#75, #76), which in turn need market data (#77).
+The comparison matrix shows four scored dimensions and six that say *not
+sourced*, each with the reason. Fundamentals, valuation, balance sheet and
+ownership need a data tier this deployment does not have; commodities need a
+price source Tiingo does not cover. A labelled gap beats a plausible number —
+once a guessed valuation and a measured one both render as numbers, nobody can
+tell them apart.
+
+Still open: watchlists and workspaces (#19), the grounded assistant (#33) and
+live updates (#34).
 
 ## Quick start
 

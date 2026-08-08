@@ -972,3 +972,70 @@ async def test_alerts_can_be_narrowed_to_what_is_urgent(client, graph):
 
     assert body
     assert all(alert["severity"] == "urgent" for alert in body)
+
+
+async def test_the_comparison_matrix_labels_its_holes(client, graph):
+    """#29. A gap with a reason beats a plausible number: once both render as
+    numbers nobody can tell a measured multiple from a guessed one."""
+    response = await client.get(
+        "/api/comparison", params={"capability_id": str(graph["capability"])}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["capability"]["label"] == "Heavy rare-earth separation"
+    assert body["columns"], "the fixture's Asset expresses this Capability"
+
+    cells = {cell["dimension"]: cell for cell in body["columns"][0]["cells"]}
+    valuation = cells["valuation"]
+    assert valuation["value"] is None
+    assert "fundamentals" in valuation["unavailable_reason"]
+
+    reasons = {item["name"] for item in body["unavailable"]}
+    assert "valuation" in reasons
+
+
+async def test_the_comparison_offers_no_overall_score(client, graph):
+    """§13 asks that users change ranking weights without changing the scores,
+    which puts the weighting on the reader's side of the line."""
+    body = (
+        await client.get("/api/comparison", params={"capability_id": str(graph["capability"])})
+    ).json()
+
+    assert "overall" not in body
+    assert all("overall" not in cell["dimension"] for cell in body["columns"][0]["cells"])
+
+
+async def test_comparing_a_capability_nothing_expresses_is_not_an_error(
+    client, session_factory, graph
+):
+    lonely = uuid.uuid4()
+    async with session_factory() as session:
+        session.add(Node(node_id=lonely, node_type=EntityType.CAPABILITY, slug="lonely"))
+        await session.flush()
+        session.add(
+            Capability(
+                capability_id=lonely,
+                revision=1,
+                name="Unexpressed",
+                slug="lonely",
+                description="…",
+                aliases=[],
+                valid_from=PUB,
+            )
+        )
+        await session.commit()
+
+    body = (await client.get("/api/comparison", params={"capability_id": str(lonely)})).json()
+
+    assert body["columns"] == []
+    # The dimensions are still named, so the screen renders a shape rather than
+    # nothing.
+    assert body["dimensions"]
+
+
+async def test_the_why_not_panel_is_empty_before_the_agent_has_run(client, graph):
+    """#30, §14.3. An empty panel is honest; a fabricated one is not."""
+    body = (await client.get(f"/api/processes/{graph['process']}/counterfactuals")).json()
+
+    assert body == []

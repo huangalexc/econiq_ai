@@ -195,6 +195,17 @@ export const api = {
   confluence: (options?: RequestOptions) =>
     request<Ok<"/api/confluence">>("/api/confluence", options),
 
+  /** §13's matrix for the Assets expressing one Capability (#29). */
+  comparison: (options?: RequestOptions) =>
+    request<Ok<"/api/comparison">>("/api/comparison", options),
+
+  /** The "Why not?" panel — alternative worlds the thesis must survive (#30). */
+  counterfactuals: (processId: string, options?: RequestOptions) =>
+    request<Ok<"/api/processes/{process_id}/counterfactuals">>(
+      `/api/processes/${processId}/counterfactuals`,
+      options,
+    ),
+
   /** Belief changes across subjects (#31). */
   journal: (options?: RequestOptions) =>
     request<Ok<"/api/journal">>("/api/journal", options),
@@ -252,6 +263,12 @@ export type Confluence = Ok<"/api/confluence">;
 export type ConfluenceHit = NonNullable<Confluence["capabilities"]>[number];
 export type JournalEntry = Ok<"/api/journal">[number];
 export type Alert = Ok<"/api/alerts">[number];
+export type AssetDetail = Ok<"/api/assets/{asset_id}">;
+export type Comparison = Ok<"/api/comparison">;
+export type ComparisonColumn = NonNullable<Comparison["columns"]>[number];
+export type ComparisonCell = NonNullable<ComparisonColumn["cells"]>[number];
+export type CounterfactualView = Ok<"/api/processes/{process_id}/counterfactuals">[number];
+export type DiscoveryChain = Ok<"/api/assets/{asset_id}/discovery-chain">;
 export type BottleneckDetail = Ok<"/api/bottlenecks/{bottleneck_id}">;
 export type CapabilityDetail = Ok<"/api/capabilities/{capability_id}">;
 export type Requirement = Ok<"/api/bottlenecks/{bottleneck_id}/requirements">;

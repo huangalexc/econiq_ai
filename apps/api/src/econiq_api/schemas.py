@@ -794,3 +794,92 @@ class AlertOut(ApiModel):
     evidence_id: uuid.UUID | None = None
     confidence_before: float | None = None
     confidence_after: float | None = None
+
+
+# --------------------------------------------------------------------------- #
+# Asset comparison (issue #29, ui_concept §13)
+# --------------------------------------------------------------------------- #
+
+
+class ComparisonCellOut(ApiModel):
+    """One Asset's value on one dimension, or the reason there isn't one."""
+
+    dimension: str
+    value: float | None = None
+    confidence: float | None = None
+    method: str | None = None
+    inputs: dict[str, float] = Field(default_factory=dict)
+    rationale: str | None = None
+    unavailable_reason: str | None = Field(
+        default=None,
+        description=(
+            "Why this cell is empty. A gap with a reason is more informative "
+            "than a plausible number: once both render as numbers the reader "
+            "cannot tell a measured multiple from a guessed one."
+        ),
+    )
+
+
+class ComparisonColumnOut(ApiModel):
+    asset: NodeRef
+    ticker: str | None = None
+    asset_class: AssetClass
+    exposure_magnitude: float | None = Field(
+        default=None, description="How strongly this Asset expresses the Capability."
+    )
+    cells: list[ComparisonCellOut] = Field(default_factory=list)
+    provenance: ProvenanceOut | None = None
+
+
+class AssetComparisonOut(ApiModel):
+    """§13's matrix, with its holes labelled.
+
+    No overall score. §13 shows an "Overall Expression" row and asks that users
+    be able to change ranking weights without changing the underlying scores —
+    which means the weighting belongs to the reader, not to the API. A server-
+    computed overall would be one weighting frozen into the data, and every
+    client would then be arguing with it.
+    """
+
+    capability: NodeRef
+    dimensions: list[str] = Field(default_factory=list)
+    columns: list[ComparisonColumnOut] = Field(default_factory=list)
+    unavailable: list[UnavailableInputOut] = Field(
+        default_factory=list,
+        description="Analyses no source in this deployment supports.",
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Counterfactuals (issue #30, ui_concept §14.3)
+# --------------------------------------------------------------------------- #
+
+
+class CounterfactualOut(ApiModel):
+    """An alternative world the thesis has to survive.
+
+    §14.3 requires the underwriting screen to "explicitly surface disconfirming
+    evidence", and its example list is a set of alternative worlds. These are
+    that list, produced by the Counterfactual agent (#66) rather than written by
+    hand.
+    """
+
+    id: uuid.UUID
+    process_id: uuid.UUID
+    challenged_assumption: str
+    alternative_world: str
+    affected_links: list[str] = Field(default_factory=list)
+    assets_harmed: list[str] = Field(default_factory=list)
+    observable_indicators: list[str] = Field(
+        default_factory=list,
+        description="What would be seen if this were the real world.",
+    )
+    plausibility: float
+    severity_if_true: float
+    is_most_dangerous: bool
+    observed_at: datetime
+    provenance: ProvenanceOut | None = None
+
+    @property
+    def threat(self) -> float:
+        return (self.plausibility / 10.0) * (self.severity_if_true / 10.0)

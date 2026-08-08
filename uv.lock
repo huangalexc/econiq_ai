@@ -404,6 +404,7 @@ name = "econiq-api"
 version = "0.1.0"
 source = { editable = "apps/api" }
 dependencies = [
+    { name = "econiq-agents" },
     { name = "econiq-data-models" },
     { name = "econiq-graph" },
     { name = "econiq-ontology" },
@@ -414,6 +415,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "econiq-agents", editable = "services/agents" },
     { name = "econiq-data-models", editable = "packages/data-models" },
     { name = "econiq-graph", editable = "services/graph" },
     { name = "econiq-ontology", editable = "packages/ontology" },

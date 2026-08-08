@@ -41,6 +41,7 @@ from econiq_api.routers import (
     monitoring,
     processes,
     runs,
+    underwriting,
 )
 
 DESCRIPTION = """\
@@ -110,6 +111,7 @@ def create_app(settings: DatabaseSettings | None = None) -> FastAPI:
         graph.router,
         monitoring.router,
         runs.router,
+        underwriting.router,
     ):
         app.include_router(router)
     return app

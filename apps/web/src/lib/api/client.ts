@@ -98,6 +98,10 @@ type Ok<P extends keyof paths> = paths[P] extends {
 export const api = {
   health: (options?: RequestOptions) => request<Ok<"/health">>("/health", options),
 
+  /** Archetype State machines, served from the ontology so no client owns a copy. */
+  archetypes: (options?: RequestOptions) =>
+    request<Ok<"/api/archetypes">>("/api/archetypes", options),
+
   /** Ranked emerging Processes and the screener behind them (ui_concept §5, §25). */
   discover: (options?: RequestOptions) =>
     request<Ok<"/api/discover">>("/api/discover", options),
@@ -207,6 +211,8 @@ export const api = {
   },
 };
 
+export type ArchetypeMachine = Ok<"/api/archetypes">[number];
+export type StateNode = NonNullable<ArchetypeMachine["states"]>[number];
 export type DiscoverFeed = Ok<"/api/discover">;
 // The list fields have Pydantic defaults, so the generated type marks them
 // optional; the API always sends them.
@@ -214,6 +220,11 @@ export type EmergingProcess = NonNullable<DiscoverFeed["processes"]>[number];
 export type ProcessTimeline = Ok<"/api/processes/{process_id}/timeline">;
 export type TimelineEntry = NonNullable<ProcessTimeline["entries"]>[number];
 export type ProcessSummary = Ok<"/api/processes">[number];
+export type ProcessState = NonNullable<
+  Ok<"/api/processes/{process_id}/states">
+>[number];
+export type Critique = Ok<"/api/processes/{process_id}/critiques">[number];
+export type Scorecard = Ok<"/api/scores/{subject_id}">[number];
 export type ProcessDetail = Ok<"/api/processes/{process_id}">;
 export type EventSummary = Ok<"/api/events">[number];
 export type BottleneckSummary = Ok<"/api/bottlenecks">[number];

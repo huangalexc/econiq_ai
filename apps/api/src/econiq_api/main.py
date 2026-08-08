@@ -30,6 +30,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from econiq_api.deps import AppState
 from econiq_api.routers import (
+    archetypes,
     assets,
     capabilities,
     discover,
@@ -98,6 +99,7 @@ def create_app(settings: DatabaseSettings | None = None) -> FastAPI:
 
     for router in (
         health.router,
+        archetypes.router,
         discover.router,
         processes.router,
         events.router,

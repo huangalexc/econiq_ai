@@ -47,6 +47,7 @@ from econiq_ontology import (
     RelationshipType,
     ScoreFamily,
     ThesisQualityDimension,
+    states_for,
 )
 from econiq_ontology import (
     ProcessStateLabel as S,
@@ -750,3 +751,43 @@ async def test_the_timeline_excludes_what_was_recorded_after_the_cut_off(client,
     ).json()["entries"]
 
     assert entries == []
+
+
+async def test_the_state_machines_are_served_from_the_ontology(client):
+    """Issues #22, #23. The terminal draws the machine; it must not own a copy."""
+    response = await client.get("/api/archetypes")
+
+    assert response.status_code == 200
+    machines = {row["archetype"]: row for row in response.json()}
+    assert set(machines) == {a.value for a in ProcessArchetype}
+
+    s_curve = machines["infrastructure_s_curve"]
+    labels = [node["state"] for node in s_curve["states"]]
+    # The sequence is developmental order, which is what makes "one step early"
+    # a near miss rather than a wrong answer.
+    assert labels == [state.value for state in states_for(ProcessArchetype.INFRASTRUCTURE_S_CURVE)]
+    assert [node["ordinal"] for node in s_curve["states"]] == list(range(len(labels)))
+
+
+async def test_maturity_runs_from_the_first_state_to_the_last(client):
+    """The Emergence Radar's X axis (§5.2) is a position on the machine."""
+    machine = (await client.get("/api/archetypes/commodity_supply_cycle")).json()
+
+    maturities = [node["maturity"] for node in machine["states"]]
+    assert maturities[0] == 0.0
+    assert maturities[-1] == 1.0
+    assert maturities == sorted(maturities)
+
+
+async def test_a_terminal_state_is_marked_as_one(client):
+    machine = (await client.get("/api/archetypes/infrastructure_s_curve")).json()
+
+    terminal = [node["state"] for node in machine["states"] if node["is_terminal"]]
+    assert terminal, "a non-cyclical machine must end somewhere"
+    assert all(not node["transitions_to"] for node in machine["states"] if node["is_terminal"])
+
+
+async def test_an_unknown_archetype_is_rejected_rather_than_invented(client):
+    response = await client.get("/api/archetypes/not_an_archetype")
+
+    assert response.status_code == 422

@@ -28,6 +28,72 @@
         }
       }
     },
+    "/api/archetypes": {
+      "get": {
+        "tags": [
+          "archetypes"
+        ],
+        "summary": "List Machines",
+        "operationId": "list_machines_api_archetypes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ArchetypeMachineOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Machines Api Archetypes Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/archetypes/{archetype}": {
+      "get": {
+        "tags": [
+          "archetypes"
+        ],
+        "summary": "Get Machine",
+        "operationId": "get_machine_api_archetypes__archetype__get",
+        "parameters": [
+          {
+            "name": "archetype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProcessArchetype"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchetypeMachineOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/discover": {
       "get": {
         "tags": [
@@ -2370,6 +2436,32 @@
         ],
         "title": "AgentRunOut",
         "description": "The provenance record every derived row cites."
+      },
+      "ArchetypeMachineOut": {
+        "properties": {
+          "archetype": {
+            "$ref": "#/components/schemas/ProcessArchetype"
+          },
+          "cyclical": {
+            "type": "boolean",
+            "title": "Cyclical"
+          },
+          "states": {
+            "items": {
+              "$ref": "#/components/schemas/StateNodeOut"
+            },
+            "type": "array",
+            "title": "States"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "archetype",
+          "cyclical"
+        ],
+        "title": "ArchetypeMachineOut",
+        "description": "The State model of one archetype (ontology \u00a78).\n\nServed so the terminal draws the machine from the ontology rather than from\na copy. The sequence defines which States are adjacent, and an inlined copy\nwould drift the first time an archetype gained one."
       },
       "AssetClass": {
         "type": "string",
@@ -4855,6 +4947,46 @@
           "basis"
         ],
         "title": "StateFeatureOut"
+      },
+      "StateNodeOut": {
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/ProcessStateLabel"
+          },
+          "ordinal": {
+            "type": "integer",
+            "title": "Ordinal",
+            "description": "Position in the developmental sequence."
+          },
+          "maturity": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Maturity",
+            "description": "Ordinal normalised to 0-1. The Emergence Radar's maturity axis (\u00a75.2). A position on a machine, not an age or a probability."
+          },
+          "transitions_to": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Transitions To"
+          },
+          "is_terminal": {
+            "type": "boolean",
+            "title": "Is Terminal"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "ordinal",
+          "maturity",
+          "is_terminal"
+        ],
+        "title": "StateNodeOut",
+        "description": "One State on an archetype's machine."
       },
       "SubgraphOut": {
         "properties": {

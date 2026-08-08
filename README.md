@@ -60,6 +60,8 @@ not the measurement.
 | #18 App shell | `apps/web` — Next.js 16 + Tailwind 4, sidebar per ui_concept §3, ⌘K command bar, a global `as_of` control, and an API client generated from the FastAPI OpenAPI document |
 | #20 BFF endpoints | `/api/discover` — Processes ranked by evidence movement, every rank decomposable; `/api/processes/{id}/timeline` — state, belief, evidence and critique on one axis |
 | #21 Discover screen | the emerging-Process panel, hot cards and the screener, with [Explain] on every rank |
+| #22 Emergence Radar | maturity against evidence acceleration, positioned from the archetype's State machine |
+| #23 Process screen | four synchronised perspectives over one `as_of`: overview, State evolution, evidence timeline, dependency graph |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000
@@ -75,8 +77,16 @@ asks for, six are computed, market attention is proxied by publisher count (and
 named `source_breadth`, because it is media coverage), and historical analogue
 strength needs Phase 2. The API says which are missing and the screen renders it.
 
+Archetype State machines are served from `/api/archetypes` rather than copied
+into the client. The sequence defines which States are adjacent, and an inlined
+copy would drift the first time an archetype gained one — as the S-curve did
+during Phase 0.
+
 Still open in #20: watchlist and alert CRUD needs users (#19), and Asset
-comparison payloads need the Asset Quality agent (#29).
+comparison payloads need the Asset Quality agent (#29). Two of ui_concept §6.1's
+six header measures have no data source in Phase 0 — historical precedent
+(Phase 2) and counterfactual robustness (no agent writes it) — and the header
+says so rather than leaving them blank.
 
 ## Quick start
 

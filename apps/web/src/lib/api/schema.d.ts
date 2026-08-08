@@ -27,6 +27,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/archetypes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Machines */
+        get: operations["list_machines_api_archetypes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/archetypes/{archetype}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Machine */
+        get: operations["get_machine_api_archetypes__archetype__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/discover": {
         parameters: {
             query?: never;
@@ -604,6 +638,21 @@ export interface components {
             } | null;
             /** Trigger Event Id */
             trigger_event_id?: string | null;
+        };
+        /**
+         * ArchetypeMachineOut
+         * @description The State model of one archetype (ontology §8).
+         *
+         *     Served so the terminal draws the machine from the ontology rather than from
+         *     a copy. The sequence defines which States are adjacent, and an inlined copy
+         *     would drift the first time an archetype gained one.
+         */
+        ArchetypeMachineOut: {
+            archetype: components["schemas"]["ProcessArchetype"];
+            /** Cyclical */
+            cyclical: boolean;
+            /** States */
+            states?: components["schemas"]["StateNodeOut"][];
         };
         /**
          * AssetClass
@@ -1579,6 +1628,27 @@ export interface components {
             /** Rationale */
             rationale?: string | null;
         };
+        /**
+         * StateNodeOut
+         * @description One State on an archetype's machine.
+         */
+        StateNodeOut: {
+            state: components["schemas"]["ProcessStateLabel"];
+            /**
+             * Ordinal
+             * @description Position in the developmental sequence.
+             */
+            ordinal: number;
+            /**
+             * Maturity
+             * @description Ordinal normalised to 0-1. The Emergence Radar's maturity axis (§5.2). A position on a machine, not an age or a probability.
+             */
+            maturity: number;
+            /** Transitions To */
+            transitions_to?: string[];
+            /** Is Terminal */
+            is_terminal: boolean;
+        };
         /** SubgraphOut */
         SubgraphOut: {
             /** Nodes */
@@ -1681,6 +1751,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthOut"];
+                };
+            };
+        };
+    };
+    list_machines_api_archetypes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchetypeMachineOut"][];
+                };
+            };
+        };
+    };
+    get_machine_api_archetypes__archetype__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archetype: components["schemas"]["ProcessArchetype"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchetypeMachineOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

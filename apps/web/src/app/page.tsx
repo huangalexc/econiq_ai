@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { EmergingPanel } from "@/components/discover/emerging-panel";
 import { HotCard } from "@/components/discover/hot-card";
 import { Screener, useScreener } from "@/components/discover/screener";
+import { EmergenceRadar, toPoints } from "@/components/viz/emergence-radar";
 import { ApiError, api } from "@/lib/api/client";
 import type { DiscoverFeed } from "@/lib/api/client";
 import { useAsOf } from "@/lib/as-of";
@@ -37,6 +38,15 @@ export default function DiscoverPage() {
   const feed = useQuery({
     queryKey: keyFor(["discover"], { asOf, query }),
     queryFn: ({ signal }) => api.discover({ asOf, query, signal }),
+  });
+
+  // The State machines are ontology, not graph: they have no `as_of` and do not
+  // change between reads, so they are cached hard rather than refetched per
+  // screen.
+  const machines = useQuery({
+    queryKey: ["archetypes"],
+    queryFn: ({ signal }) => api.archetypes({ signal }),
+    staleTime: Infinity,
   });
 
   return (
@@ -62,6 +72,17 @@ export default function DiscoverPage() {
           <section className="mt-6">
             <h2 className="sr-only">Emerging Processes</h2>
             <EmergingPanel processes={feed.data.processes} />
+          </section>
+
+          <section className="mt-8">
+            <h2 className="text-sm font-medium uppercase tracking-wider text-ink-subtle">
+              Emergence radar
+            </h2>
+            <div className="mt-3">
+              <EmergenceRadar
+                points={toPoints(feed.data.processes, machines.data ?? [])}
+              />
+            </div>
           </section>
 
           <section className="mt-8">

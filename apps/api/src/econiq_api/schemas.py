@@ -608,3 +608,38 @@ class TimelineEntryOut(ApiModel):
 class ProcessTimelineOut(ApiModel):
     process_id: uuid.UUID
     entries: list[TimelineEntryOut] = Field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- #
+# Archetype State machines (issues #22, #23)
+# --------------------------------------------------------------------------- #
+
+
+class StateNodeOut(ApiModel):
+    """One State on an archetype's machine."""
+
+    state: ProcessStateLabel
+    ordinal: int = Field(description="Position in the developmental sequence.")
+    maturity: float = Field(
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Ordinal normalised to 0-1. The Emergence Radar's maturity axis "
+            "(§5.2). A position on a machine, not an age or a probability."
+        ),
+    )
+    transitions_to: list[str] = Field(default_factory=list)
+    is_terminal: bool
+
+
+class ArchetypeMachineOut(ApiModel):
+    """The State model of one archetype (ontology §8).
+
+    Served so the terminal draws the machine from the ontology rather than from
+    a copy. The sequence defines which States are adjacent, and an inlined copy
+    would drift the first time an archetype gained one.
+    """
+
+    archetype: ProcessArchetype
+    cyclical: bool
+    states: list[StateNodeOut] = Field(default_factory=list)

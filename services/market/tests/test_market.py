@@ -298,7 +298,7 @@ async def test_a_close_is_also_written_as_a_quantitative_observation(session_fac
 def test_a_provider_declares_what_it_covers_rather_than_returning_empty():
     """An empty result is indistinguishable from a company with no
     fundamentals; a declaration is not (tech rec §19)."""
-    from econiq_market import Facet, FacetUnavailableError, TIINGO_COVERAGE
+    from econiq_market import TIINGO_COVERAGE, Facet, FacetUnavailableError
 
     assert Facet.EQUITIES in TIINGO_COVERAGE.facets
     assert Facet.FX in TIINGO_COVERAGE.facets
@@ -384,7 +384,7 @@ async def test_a_point_in_time_read_over_parquet_ignores_later_revisions(session
     assert now_value == 25.375
 
 
-def pl_col_eq(column: str, value):  # noqa: ANN001, ANN201 - test helper
+def pl_col_eq(column: str, value):
     import polars as pl
 
     return pl.col(column) == value

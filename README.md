@@ -126,7 +126,29 @@ price source Tiingo does not cover. A labelled gap beats a plausible number —
 once a guessed valuation and a measured one both render as numbers, nobody can
 tell them apart.
 
-**Phase 1 is complete.** Phase 2 is the historical engine (#35–#46).
+**Phase 1 is complete.** Phase 2 — the historical engine (#35–#46) — is under
+way.
+
+## Phase 2 — historical engine
+
+| Issue | Delivered |
+|---|---|
+| #35 Vendor abstraction | `MarketDataProvider` with declared coverage; survivorship-free universe |
+| #36 Analytical layer | immutable Parquet snapshots, DuckDB views, Polars frames |
+
+```bash
+uv run python -c "..."   # export a snapshot; see services/market/warehouse.py
+```
+
+Snapshots are immutable and carry both clocks. `as_known_at` filters on
+`observed_at` **and** `recorded_at` — dropping the second is the mistake that
+makes a backtest look brilliant, because it hands every past day the adjustment
+factors that only exist after later corporate actions.
+
+#35 is delivered in the half the data supports. Tiingo serves two of tech rec
+§19's seven facets; fundamentals, ownership, commodities and macro are declared
+missing with reasons rather than stubbed, because a provider returning an empty
+list is indistinguishable from a company with no fundamentals.
 
 Open follow-ups from Phase 1: fundamentals and commodity prices (#75, #77 note
 the gaps), and the Process causal mechanism (#74).

@@ -25,8 +25,12 @@ import zipfile
 from collections.abc import AsyncIterator, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
 import httpx
+
+if TYPE_CHECKING:
+    from econiq_market.provider import Coverage
 
 BASE_URL = "https://api.tiingo.com"
 UNIVERSE_URL = "https://apimedia.tiingo.com/docs/tiingo/daily/supported_tickers.zip"
@@ -132,6 +136,17 @@ class TiingoClient:
         if self._owns_client and self._client is not None:
             await self._client.aclose()
             self._client = None
+
+    @property
+    def coverage(self) -> Coverage:
+        """What this vendor serves (tech rec §19).
+
+        Declared rather than discovered. A caller asks before it analyses, so a
+        thin comparison is a known limit rather than a surprise in the output.
+        """
+        from econiq_market.provider import TIINGO_COVERAGE
+
+        return TIINGO_COVERAGE
 
     @property
     def http(self) -> httpx.AsyncClient:

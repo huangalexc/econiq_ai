@@ -288,3 +288,117 @@ async def test_a_close_is_also_written_as_a_quantitative_observation(session_fac
     assert all(row.reported_vs_derived == "reported" for row in rows)
     # A re-fetch is a new observation of the same fact, not a restatement.
     assert all(row.restated is False for row in rows)
+
+
+# --------------------------------------------------------------------------- #
+# Vendor abstraction (#35) and the analytical layer (#36)
+# --------------------------------------------------------------------------- #
+
+
+def test_a_provider_declares_what_it_covers_rather_than_returning_empty():
+    """An empty result is indistinguishable from a company with no
+    fundamentals; a declaration is not (tech rec §19)."""
+    from econiq_market import Facet, FacetUnavailableError, TIINGO_COVERAGE
+
+    assert Facet.EQUITIES in TIINGO_COVERAGE.facets
+    assert Facet.FX in TIINGO_COVERAGE.facets
+    assert Facet.FUNDAMENTALS not in TIINGO_COVERAGE.facets
+
+    TIINGO_COVERAGE.requires(Facet.EQUITIES)
+    with pytest.raises(FacetUnavailableError):
+        TIINGO_COVERAGE.requires(Facet.FUNDAMENTALS)
+
+
+def test_every_missing_facet_carries_a_reason():
+    """So a caller renders 'not sourced, because…' rather than an empty cell."""
+    from econiq_market import TIINGO_COVERAGE
+
+    named = {name for name, _ in TIINGO_COVERAGE.notes}
+    assert {"fundamentals", "ownership", "commodities", "macro"} <= named
+    assert all(reason for _, reason in TIINGO_COVERAGE.notes)
+
+
+def test_the_client_satisfies_the_provider_protocol():
+    from econiq_market import MarketDataProvider
+
+    assert isinstance(TiingoClient("token"), MarketDataProvider)
+
+
+@pytest.mark.integration
+async def test_a_snapshot_is_immutable(session_factory, tmp_path):
+    """A Parquet file that gets rewritten silently changes every result already
+    computed from it (agent doc §20)."""
+    from econiq_market import Warehouse
+
+    warehouse = Warehouse(tmp_path)
+    taken = datetime(2026, 8, 7, 12, tzinfo=UTC)
+    await warehouse.export(session_factory, taken_at=taken)
+
+    with pytest.raises(FileExistsError, match="immutable"):
+        await warehouse.export(session_factory, taken_at=taken)
+
+
+@pytest.mark.integration
+async def test_prices_reach_duckdb_with_both_clocks(session_factory, tmp_path):
+    from econiq_market import Warehouse
+
+    await _asset(session_factory, ticker="MP", asset_class=AssetClass.COMMON_STOCK)
+    await _ingest(session_factory).run(now=datetime(2026, 3, 5, tzinfo=UTC), start=date(2026, 3, 1))
+
+    warehouse = Warehouse(tmp_path)
+    result = await warehouse.export(session_factory)
+
+    assert result.rows["prices"] == 3
+    connection = warehouse.connect()
+    columns = {row[0] for row in connection.execute("DESCRIBE prices").fetchall()}
+    # Both clocks survive the export, or a backtest cannot be point-in-time.
+    assert {"observed_at", "recorded_at", "close", "adj_close"} <= columns
+    assert connection.execute("SELECT count(*) FROM prices").fetchone()[0] == 3
+
+
+@pytest.mark.integration
+async def test_a_point_in_time_read_over_parquet_ignores_later_revisions(session_factory, tmp_path):
+    """The mistake that makes a backtest look brilliant: handing every past day
+    the adjustment factors that only exist after later corporate actions."""
+    from econiq_market import Warehouse, as_known_at
+
+    await _asset(session_factory, ticker="MP", asset_class=AssetClass.COMMON_STOCK)
+    first = datetime(2026, 3, 5, tzinfo=UTC)
+    later = datetime(2026, 4, 5, tzinfo=UTC)
+    await _ingest(session_factory).run(now=first, start=date(2026, 3, 1))
+    await _ingest(session_factory, PRICES.replace("50.75", "25.375")).run(
+        now=later, start=date(2026, 3, 1)
+    )
+
+    warehouse = Warehouse(tmp_path)
+    await warehouse.export(session_factory)
+    prices = warehouse.frame("prices")
+
+    as_then = as_known_at(prices, first + timedelta(days=1))
+    as_now = as_known_at(prices, later + timedelta(days=1))
+
+    march_2 = datetime(2026, 3, 2, tzinfo=UTC)
+    then_value = as_then.filter(pl_col_eq("observed_at", march_2))["adj_close"][0]
+    now_value = as_now.filter(pl_col_eq("observed_at", march_2))["adj_close"][0]
+    assert then_value == 50.75
+    assert now_value == 25.375
+
+
+def pl_col_eq(column: str, value):  # noqa: ANN001, ANN201 - test helper
+    import polars as pl
+
+    return pl.col(column) == value
+
+
+@pytest.mark.integration
+async def test_an_empty_table_still_gets_a_file(session_factory, tmp_path):
+    """A missing file and an empty one look the same to a glob, and a notebook
+    that silently skips a table is worse than one that reads zero rows."""
+    from econiq_market import Warehouse
+
+    warehouse = Warehouse(tmp_path)
+    result = await warehouse.export(session_factory)
+
+    assert result.rows["prices"] == 0
+    assert result.snapshot.table("prices").exists()
+    assert (result.snapshot.path / "MANIFEST.txt").exists()

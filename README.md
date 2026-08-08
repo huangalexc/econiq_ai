@@ -67,6 +67,7 @@ not the measurement.
 | #26 Graph explorer | React Flow over the typed edges, expanded a hop at a time, laid out by ontology layer |
 | #65 Thesis Scoring agent | ten Thesis Quality axes — five measured from rows, four judged, one deferred to Phase 2 |
 | #66 Counterfactual agent | alternative worlds the thesis has to survive, with "no straw men" enforced rather than requested |
+| #67 Evidence Independence | cross-Event dependence graph; code finds what is structural, the agent judges the rest |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000
@@ -95,8 +96,11 @@ component written once per screen.
 The Thesis Quality scorecard now fills nine of its ten axes. Five are computed
 from rows rather than judged — a model re-scoring a number the system already
 measured is not a second opinion, it is an opportunity to disagree with nothing
-to settle it. Historical precedent stays empty until Phase 2, and
-`evidence_independence` gets a second opinion when #67 lands.
+to settle it. Historical precedent stays empty until Phase 2.
+
+`evidence_independence` counts *effective* sources: the dependence graph is
+collapsed into connected components, so four Events all citing one filing count
+once rather than four.
 
 Still open in #20: watchlist and alert CRUD needs users (#19), and Asset
 comparison payloads need the Asset Quality agent (#29).

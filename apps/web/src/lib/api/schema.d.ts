@@ -513,6 +513,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/confluence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Confluence
+         * @description Capabilities the selected Processes share.
+         *
+         *     §11's picture is two Processes converging on one Capability, and the AND is
+         *     the point: a Capability that several *independent* theses all require is
+         *     more interesting than one a single thesis needs badly. Confluence is a
+         *     structural fact, so it is read from the graph rather than judged.
+         */
+        get: operations["confluence_api_confluence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Journal Feed
+         * @description Every belief change, across subjects (#31, ui_concept §20).
+         *
+         *     The per-Process journal already exists; this is the same record read as a
+         *     feed, which is how someone asks "what has the system changed its mind about
+         *     lately" rather than "about this".
+         */
+        get: operations["journal_feed_api_journal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alert Feed
+         * @description Thesis changes worth reading (#32, PRD §20).
+         *
+         *     Derived at read time rather than stored. Point-in-time comes free — asking
+         *     as of July returns the alerts that existed in July — and an alert whose
+         *     underlying change was later superseded stops existing rather than lingering
+         *     as a notification about something no longer true.
+         *
+         *     `process_id` is where a watchlist plugs in once users exist (#19). Until
+         *     then the feed is the whole graph, which is the right default for one analyst.
+         */
+        get: operations["alert_feed_api_alerts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/runs": {
         parameters: {
             query?: never;
@@ -662,6 +739,45 @@ export interface components {
             } | null;
             /** Trigger Event Id */
             trigger_event_id?: string | null;
+        };
+        /**
+         * AlertOut
+         * @description A change to the thesis, not to a price.
+         *
+         *     PRD §20 and ui_concept §19 are both explicit that this monitoring watches
+         *     thesis integrity. The copy says what changed about the argument — "the
+         *     binding Bottleneck may be resolving" — because an alert that reads "XYZ down
+         *     5%" tells the reader something they already have a terminal for.
+         */
+        AlertOut: {
+            /**
+             * Id
+             * @description Deterministic: the same change never alerts twice.
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Severity
+             * @description 'informational', 'notable' or 'urgent'.
+             */
+            severity: string;
+            subject: components["schemas"]["NodeRef"];
+            /** Headline */
+            headline: string;
+            /** Detail */
+            detail: string;
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /** Evidence Id */
+            evidence_id?: string | null;
+            /** Confidence Before */
+            confidence_before?: number | null;
+            /** Confidence After */
+            confidence_after?: number | null;
         };
         /**
          * ArchetypeMachineOut
@@ -888,6 +1004,44 @@ export interface components {
             stated_at?: string | null;
             /** @description The extraction run. Null means nothing can be attributed, which is shown rather than hidden — an unattributable quotation is exactly what the evidence chain exists to prevent. */
             provenance?: components["schemas"]["ProvenanceOut"] | null;
+        };
+        /**
+         * ConfluenceHitOut
+         * @description A Capability several selected Processes all reach.
+         */
+        ConfluenceHitOut: {
+            capability: components["schemas"]["NodeRef"];
+            /**
+             * Process Ids
+             * @description Which of the selected Processes reach it.
+             */
+            process_ids?: string[];
+            /** Reached By */
+            reached_by: number;
+            /** Shortest Hops */
+            shortest_hops: number;
+            /**
+             * Asset Count
+             * @description Assets expressing this Capability — where the confluence becomes investable.
+             */
+            asset_count: number;
+        };
+        /**
+         * ConfluenceResultOut
+         * @description §11's AND semantics, explicitly.
+         *
+         *     ``require_all`` is the difference between "Capabilities relevant to any of
+         *     these Processes" — which is a union and mostly noise — and "Capabilities
+         *     every one of them needs", which is the question ui_concept §11 poses and the
+         *     reason confluence is a distinct feature rather than a filter.
+         */
+        ConfluenceResultOut: {
+            /** Process Ids */
+            process_ids?: string[];
+            /** Require All */
+            require_all: boolean;
+            /** Capabilities */
+            capabilities?: components["schemas"]["ConfluenceHitOut"][];
         };
         /**
          * CritiqueKind
@@ -1287,6 +1441,9 @@ export interface components {
         /**
          * JournalEntryOut
          * @description Why the system changed its mind (PRD §21).
+         *
+         *     Immutable once written. The journal is the audit trail, and an audit trail
+         *     that can be edited is a narrative.
          */
         JournalEntryOut: {
             /**
@@ -1299,10 +1456,21 @@ export interface components {
             /** Summary */
             summary: string;
             /**
+             * Subject Id
+             * Format: uuid
+             */
+            subject_id: string;
+            subject_type: components["schemas"]["EntityType"];
+            /**
              * Observed At
              * Format: date-time
              */
             observed_at: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
             /** Confidence Before */
             confidence_before: number | null;
             /** Confidence After */
@@ -1313,6 +1481,8 @@ export interface components {
             }[];
             /** Triggering Event Id */
             triggering_event_id?: string | null;
+            /** @description The run that changed its mind. #31 asks every entry to reach a model version — a belief change nobody can attribute is a belief change nobody can review. */
+            provenance?: components["schemas"]["ProvenanceOut"] | null;
         };
         /**
          * LogicOperator
@@ -2714,6 +2884,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IntegrityReportOut"];
+                };
+            };
+        };
+    };
+    confluence_api_confluence_get: {
+        parameters: {
+            query: {
+                process_id: string[];
+                /** @description AND semantics (ui_concept §11). False returns the union, which is usually noise. */
+                require_all?: boolean;
+                /** @description Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfluenceResultOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    journal_feed_api_journal_get: {
+        parameters: {
+            query?: {
+                subject_id?: string[] | null;
+                subject_type?: components["schemas"]["EntityType"] | null;
+                limit?: number;
+                offset?: number;
+                /** @description Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    alert_feed_api_alerts_get: {
+        parameters: {
+            query?: {
+                process_id?: string[] | null;
+                window_days?: number;
+                severity?: string[] | null;
+                limit?: number;
+                offset?: number;
+                /** @description Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

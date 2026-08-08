@@ -1,8 +1,10 @@
 import {
+  Bell,
   Boxes,
   Compass,
   Database,
   Eye,
+  Gauge,
   GitBranch,
   History,
   LineChart,
@@ -43,16 +45,18 @@ export const NAVIGATION: NavSection[] = [
     items: [
       { label: "Discover", href: "/", icon: Compass },
       { label: "Processes", href: "/processes", icon: Workflow },
+      { label: "Bottlenecks", href: "/bottlenecks", icon: Gauge },
       { label: "Capabilities", href: "/capabilities", icon: Network },
       { label: "Assets", href: "/assets", icon: Boxes },
-      { label: "Graph", href: "/graph", icon: GitBranch, planned: "#26" },
+      { label: "Graph", href: "/graph", icon: GitBranch },
     ],
   },
   {
     heading: "My research",
     items: [
-      { label: "Watchlist", href: "/watchlist", icon: Eye, planned: "#32" },
-      { label: "Journal", href: "/journal", icon: LineChart, planned: "#31" },
+      { label: "Alerts", href: "/alerts", icon: Bell },
+      { label: "Journal", href: "/journal", icon: LineChart },
+      { label: "Watchlist", href: "/watchlist", icon: Eye, planned: "#19" },
     ],
   },
   {

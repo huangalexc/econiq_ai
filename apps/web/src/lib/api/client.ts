@@ -191,6 +191,18 @@ export const api = {
       options,
     ),
 
+  /** Capabilities several selected Processes all reach (ui_concept §11). */
+  confluence: (options?: RequestOptions) =>
+    request<Ok<"/api/confluence">>("/api/confluence", options),
+
+  /** Belief changes across subjects (#31). */
+  journal: (options?: RequestOptions) =>
+    request<Ok<"/api/journal">>("/api/journal", options),
+
+  /** Thesis changes worth reading (#32). */
+  alerts: (options?: RequestOptions) =>
+    request<Ok<"/api/alerts">>("/api/alerts", options),
+
   evidence: (nodeId: string, options?: RequestOptions) =>
     request<Ok<"/api/evidence/{node_id}">>(`/api/evidence/${nodeId}`, options),
 
@@ -236,6 +248,13 @@ export type ScoreDimension = NonNullable<Scorecard["dimensions"]>[number];
 export type Provenance = NonNullable<Scorecard["provenance"]>;
 export type Inspection = Ok<"/api/evidence/{node_id}/inspect">;
 export type SubgraphResponse = Ok<"/api/graph/subgraph">;
+export type Confluence = Ok<"/api/confluence">;
+export type ConfluenceHit = NonNullable<Confluence["capabilities"]>[number];
+export type JournalEntry = Ok<"/api/journal">[number];
+export type Alert = Ok<"/api/alerts">[number];
+export type BottleneckDetail = Ok<"/api/bottlenecks/{bottleneck_id}">;
+export type CapabilityDetail = Ok<"/api/capabilities/{capability_id}">;
+export type Requirement = Ok<"/api/bottlenecks/{bottleneck_id}/requirements">;
 export type InspectedClaim = NonNullable<Inspection["claims"]>[number];
 export type ProcessDetail = Ok<"/api/processes/{process_id}">;
 export type EventSummary = Ok<"/api/events">[number];

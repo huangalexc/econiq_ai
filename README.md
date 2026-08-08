@@ -68,6 +68,9 @@ not the measurement.
 | #65 Thesis Scoring agent | ten Thesis Quality axes — five measured from rows, four judged, one deferred to Phase 2 |
 | #66 Counterfactual agent | alternative worlds the thesis has to survive, with "no straw men" enforced rather than requested |
 | #67 Evidence Independence | cross-Event dependence graph; code finds what is structural, the agent judges the rest |
+| #27 Bottleneck & Capability | constraint profiles, the AND/OR requirement tree, and confluence search with AND semantics |
+| #31 Thesis journal | every belief change, immutable, each reaching the run that made it |
+| #32 Semantic alerts | thesis changes rather than price moves, derived at read time |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000
@@ -102,8 +105,13 @@ to settle it. Historical precedent stays empty until Phase 2.
 collapsed into connected components, so four Events all citing one filing count
 once rather than four.
 
-Still open in #20: watchlist and alert CRUD needs users (#19), and Asset
-comparison payloads need the Asset Quality agent (#29).
+Alerts are derived when read rather than stored, so a past `as_of` returns the
+alerts that existed then, and one whose underlying change was later superseded
+stops existing rather than lingering. Watchlist filtering plugs into the same
+endpoint once users exist (#19).
+
+Still open: watchlists need users (#19); Asset comparison needs the Quant and
+Quality agents (#75, #76), which in turn need market data (#77).
 
 ## Quick start
 

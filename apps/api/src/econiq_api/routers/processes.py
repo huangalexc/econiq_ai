@@ -295,16 +295,21 @@ async def journal(
         .scalars()
         .all()
     )
+    attribution = await provenance.load(session, (row.agent_run_id for row in rows))
     return [
         JournalEntryOut(
             id=row.journal_entry_id,
             kind=row.kind.value,
             summary=row.summary,
+            subject_id=row.subject_id,
+            subject_type=row.subject_type,
             observed_at=row.observed_at,
+            recorded_at=row.recorded_at,
             confidence_before=row.confidence_before,
             confidence_after=row.confidence_after,
             changes=list(row.changes),
             triggering_event_id=row.triggering_event_id,
+            provenance=attribution.get(row.agent_run_id) if row.agent_run_id else None,
         )
         for row in rows
     ]

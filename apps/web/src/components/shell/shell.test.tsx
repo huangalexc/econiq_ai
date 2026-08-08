@@ -14,16 +14,18 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("navigation", () => {
-  it("leads with Discover and Processes, not Assets", () => {
-    // ui_concept §2.1: the product is Process-first and Asset-second. A sidebar
-    // that opened on Assets would be a screener with extra steps.
+  it("leads with Discover and puts Assets last in the chain", () => {
+    // ui_concept §2.1: the product is Process-first and Asset-second. Asserted
+    // as an ordering rather than an exact list, so adding a layer to the chain
+    // does not fail a test about which end it belongs at.
     const research = NAVIGATION[0].items.map((item) => item.label);
-    expect(research.slice(0, 4)).toEqual([
-      "Discover",
-      "Processes",
-      "Capabilities",
-      "Assets",
-    ]);
+
+    expect(research[0]).toBe("Discover");
+    expect(research.indexOf("Processes")).toBeLessThan(research.indexOf("Assets"));
+    expect(research.indexOf("Bottlenecks")).toBeLessThan(
+      research.indexOf("Capabilities"),
+    );
+    expect(research.indexOf("Capabilities")).toBeLessThan(research.indexOf("Assets"));
   });
 
   it("shows routes whose screens are not built yet, labelled", () => {

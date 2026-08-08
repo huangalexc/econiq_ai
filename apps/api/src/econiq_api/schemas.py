@@ -111,16 +111,31 @@ class ProcessStateOut(ApiModel):
 
 
 class JournalEntryOut(ApiModel):
-    """Why the system changed its mind (PRD §21)."""
+    """Why the system changed its mind (PRD §21).
+
+    Immutable once written. The journal is the audit trail, and an audit trail
+    that can be edited is a narrative.
+    """
 
     id: uuid.UUID
     kind: str
     summary: str
+    subject_id: uuid.UUID
+    subject_type: EntityType
     observed_at: datetime
+    recorded_at: datetime
     confidence_before: float | None
     confidence_after: float | None
     changes: list[dict[str, Any]] = Field(default_factory=list)
     triggering_event_id: uuid.UUID | None = None
+    provenance: ProvenanceOut | None = Field(
+        default=None,
+        description=(
+            "The run that changed its mind. #31 asks every entry to reach a "
+            "model version — a belief change nobody can attribute is a belief "
+            "change nobody can review."
+        ),
+    )
 
 
 class CritiqueOut(ApiModel):
@@ -719,3 +734,63 @@ class ArchetypeMachineOut(ApiModel):
     archetype: ProcessArchetype
     cyclical: bool
     states: list[StateNodeOut] = Field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- #
+# Confluence search (issue #27, ui_concept §11)
+# --------------------------------------------------------------------------- #
+
+
+class ConfluenceHitOut(ApiModel):
+    """A Capability several selected Processes all reach."""
+
+    capability: NodeRef
+    process_ids: list[uuid.UUID] = Field(
+        default_factory=list, description="Which of the selected Processes reach it."
+    )
+    reached_by: int
+    shortest_hops: int
+    asset_count: int = Field(
+        description="Assets expressing this Capability — where the confluence becomes investable."
+    )
+
+
+class ConfluenceResultOut(ApiModel):
+    """§11's AND semantics, explicitly.
+
+    ``require_all`` is the difference between "Capabilities relevant to any of
+    these Processes" — which is a union and mostly noise — and "Capabilities
+    every one of them needs", which is the question ui_concept §11 poses and the
+    reason confluence is a distinct feature rather than a filter.
+    """
+
+    process_ids: list[uuid.UUID] = Field(default_factory=list)
+    require_all: bool
+    capabilities: list[ConfluenceHitOut] = Field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- #
+# Semantic alerts (issue #32, PRD §20; ui_concept §19, §26)
+# --------------------------------------------------------------------------- #
+
+
+class AlertOut(ApiModel):
+    """A change to the thesis, not to a price.
+
+    PRD §20 and ui_concept §19 are both explicit that this monitoring watches
+    thesis integrity. The copy says what changed about the argument — "the
+    binding Bottleneck may be resolving" — because an alert that reads "XYZ down
+    5%" tells the reader something they already have a terminal for.
+    """
+
+    id: str = Field(description="Deterministic: the same change never alerts twice.")
+    kind: str
+    severity: str = Field(description="'informational', 'notable' or 'urgent'.")
+    subject: NodeRef
+    headline: str
+    detail: str
+    observed_at: datetime
+    #: What to read to decide whether it matters.
+    evidence_id: uuid.UUID | None = None
+    confidence_before: float | None = None
+    confidence_after: float | None = None

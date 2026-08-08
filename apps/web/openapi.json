@@ -2049,6 +2049,332 @@
         }
       }
     },
+    "/api/confluence": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Confluence",
+        "description": "Capabilities the selected Processes share.\n\n\u00a711's picture is two Processes converging on one Capability, and the AND is\nthe point: a Capability that several *independent* theses all require is\nmore interesting than one a single thesis needs badly. Confluence is a\nstructural fact, so it is read from the graph rather than judged.",
+        "operationId": "confluence_api_confluence_get",
+        "parameters": [
+          {
+            "name": "process_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "title": "Process Id"
+            }
+          },
+          {
+            "name": "require_all",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "AND semantics (ui_concept \u00a711). False returns the union, which is usually noise.",
+              "default": true,
+              "title": "Require All"
+            },
+            "description": "AND semantics (ui_concept \u00a711). False returns the union, which is usually noise."
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfluenceResultOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/journal": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Journal Feed",
+        "description": "Every belief change, across subjects (#31, ui_concept \u00a720).\n\nThe per-Process journal already exists; this is the same record read as a\nfeed, which is how someone asks \"what has the system changed its mind about\nlately\" rather than \"about this\".",
+        "operationId": "journal_feed_api_journal_get",
+        "parameters": [
+          {
+            "name": "subject_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subject Id"
+            }
+          },
+          {
+            "name": "subject_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EntityType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subject Type"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JournalEntryOut"
+                  },
+                  "title": "Response Journal Feed Api Journal Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/alerts": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Alert Feed",
+        "description": "Thesis changes worth reading (#32, PRD \u00a720).\n\nDerived at read time rather than stored. Point-in-time comes free \u2014 asking\nas of July returns the alerts that existed in July \u2014 and an alert whose\nunderlying change was later superseded stops existing rather than lingering\nas a notification about something no longer true.\n\n`process_id` is where a watchlist plugs in once users exist (#19). Until\nthen the feed is the whole graph, which is the right default for one analyst.",
+        "operationId": "alert_feed_api_alerts_get",
+        "parameters": [
+          {
+            "name": "process_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Process Id"
+            }
+          },
+          {
+            "name": "window_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "default": 14,
+              "title": "Window Days"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then.",
+              "title": "As Of"
+            },
+            "description": "Reconstruct the graph as it was at this instant. Omit for the current state. Revisions and observations recorded later are excluded, so a replay describes what was believed then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertOut"
+                  },
+                  "title": "Response Alert Feed Api Alerts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/runs": {
       "get": {
         "tags": [
@@ -2499,6 +2825,87 @@
         ],
         "title": "AgentRunOut",
         "description": "The provenance record every derived row cites."
+      },
+      "AlertOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Deterministic: the same change never alerts twice."
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity",
+            "description": "'informational', 'notable' or 'urgent'."
+          },
+          "subject": {
+            "$ref": "#/components/schemas/NodeRef"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          },
+          "confidence_before": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Before"
+          },
+          "confidence_after": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence After"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "subject",
+          "headline",
+          "detail",
+          "observed_at"
+        ],
+        "title": "AlertOut",
+        "description": "A change to the thesis, not to a price.\n\nPRD \u00a720 and ui_concept \u00a719 are both explicit that this monitoring watches\nthesis integrity. The copy says what changed about the argument \u2014 \"the\nbinding Bottleneck may be resolving\" \u2014 because an alert that reads \"XYZ down\n5%\" tells the reader something they already have a terminal for."
       },
       "ArchetypeMachineOut": {
         "properties": {
@@ -3149,6 +3556,75 @@
           "source_location"
         ],
         "title": "ClaimOut"
+      },
+      "ConfluenceHitOut": {
+        "properties": {
+          "capability": {
+            "$ref": "#/components/schemas/NodeRef"
+          },
+          "process_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Process Ids",
+            "description": "Which of the selected Processes reach it."
+          },
+          "reached_by": {
+            "type": "integer",
+            "title": "Reached By"
+          },
+          "shortest_hops": {
+            "type": "integer",
+            "title": "Shortest Hops"
+          },
+          "asset_count": {
+            "type": "integer",
+            "title": "Asset Count",
+            "description": "Assets expressing this Capability \u2014 where the confluence becomes investable."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "capability",
+          "reached_by",
+          "shortest_hops",
+          "asset_count"
+        ],
+        "title": "ConfluenceHitOut",
+        "description": "A Capability several selected Processes all reach."
+      },
+      "ConfluenceResultOut": {
+        "properties": {
+          "process_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Process Ids"
+          },
+          "require_all": {
+            "type": "boolean",
+            "title": "Require All"
+          },
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/ConfluenceHitOut"
+            },
+            "type": "array",
+            "title": "Capabilities"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "require_all"
+        ],
+        "title": "ConfluenceResultOut",
+        "description": "\u00a711's AND semantics, explicitly.\n\n``require_all`` is the difference between \"Capabilities relevant to any of\nthese Processes\" \u2014 which is a union and mostly noise \u2014 and \"Capabilities\nevery one of them needs\", which is the question ui_concept \u00a711 poses and the\nreason confluence is a distinct feature rather than a filter."
       },
       "CritiqueKind": {
         "type": "string",
@@ -4105,10 +4581,23 @@
             "type": "string",
             "title": "Summary"
           },
+          "subject_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Subject Id"
+          },
+          "subject_type": {
+            "$ref": "#/components/schemas/EntityType"
+          },
           "observed_at": {
             "type": "string",
             "format": "date-time",
             "title": "Observed At"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
           },
           "confidence_before": {
             "anyOf": [
@@ -4151,6 +4640,17 @@
               }
             ],
             "title": "Triggering Event Id"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProvenanceOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The run that changed its mind. #31 asks every entry to reach a model version \u2014 a belief change nobody can attribute is a belief change nobody can review."
           }
         },
         "additionalProperties": false,
@@ -4159,12 +4659,15 @@
           "id",
           "kind",
           "summary",
+          "subject_id",
+          "subject_type",
           "observed_at",
+          "recorded_at",
           "confidence_before",
           "confidence_after"
         ],
         "title": "JournalEntryOut",
-        "description": "Why the system changed its mind (PRD \u00a721)."
+        "description": "Why the system changed its mind (PRD \u00a721).\n\nImmutable once written. The journal is the audit trail, and an audit trail\nthat can be edited is a narrative."
       },
       "LogicOperator": {
         "type": "string",

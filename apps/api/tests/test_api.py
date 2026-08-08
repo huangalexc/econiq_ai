@@ -853,3 +853,122 @@ async def test_a_state_assignment_is_explainable_like_a_score_is(client, graph):
     body = (await client.get(f"/api/processes/{graph['process']}")).json()
 
     assert "provenance" in body["state"]
+
+
+async def test_confluence_requires_every_selected_process_by_default(client, graph):
+    """ui_concept §11's AND: a Capability several independent theses all need
+    is more interesting than one a single thesis needs badly."""
+    response = await client.get("/api/confluence", params={"process_id": str(graph["process"])})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["require_all"] is True
+    hit = body["capabilities"][0]
+    assert hit["capability"]["label"] == "Heavy rare-earth separation"
+    assert hit["reached_by"] == 1
+    # Where the confluence becomes investable.
+    assert hit["asset_count"] == 1
+
+
+async def test_confluence_drops_a_capability_only_one_process_reaches(
+    client, session_factory, graph
+):
+    """With two Processes selected and AND semantics, a Capability reached by
+    one of them is not a confluence."""
+    other = uuid.uuid4()
+    async with session_factory() as session:
+        session.add(Node(node_id=other, node_type=EntityType.PROCESS, slug="other"))
+        await session.flush()
+        session.add(
+            Process(
+                process_id=other,
+                revision=1,
+                name="Unrelated",
+                slug="other",
+                description="…",
+                archetype=ProcessArchetype.COMMODITY_SUPPLY_CYCLE,
+                status=ProcessStatus.ACTIVE,
+                valid_from=PUB,
+            )
+        )
+        await session.commit()
+
+    body = (
+        await client.get(
+            "/api/confluence",
+            params={"process_id": [str(graph["process"]), str(other)]},
+        )
+    ).json()
+
+    assert body["capabilities"] == []
+
+    union = (
+        await client.get(
+            "/api/confluence",
+            params={
+                "process_id": [str(graph["process"]), str(other)],
+                "require_all": "false",
+            },
+        )
+    ).json()
+    assert len(union["capabilities"]) == 1
+
+
+async def test_the_journal_feed_reaches_the_model_that_changed_its_mind(client, graph):
+    """#31: a belief change nobody can attribute is one nobody can review."""
+    body = (await client.get("/api/journal")).json()
+
+    assert body
+    entry = body[0]
+    assert entry["subject_id"] == str(graph["process"])
+    assert entry["subject_type"] == "process"
+    assert "provenance" in entry
+    assert entry["recorded_at"]
+
+
+async def test_alerts_describe_the_thesis_not_the_price(client, graph):
+    """PRD §20. The fixture's critique is a new open finding, which is a change
+    to the argument."""
+    body = (await client.get("/api/alerts", params={"window_days": 365})).json()
+
+    assert body
+    kinds = {alert["kind"] for alert in body}
+    assert "critique_opened" in kinds
+    assert all("%" not in alert["headline"] for alert in body)
+
+
+async def test_the_most_damaging_critique_raises_the_severity(client, graph):
+    body = (await client.get("/api/alerts", params={"window_days": 365})).json()
+
+    critique = next(a for a in body if a["kind"] == "critique_opened")
+    assert critique["severity"] == "urgent"
+    assert critique["subject"]["label"] == "Domestic strategic-mineral security"
+
+
+async def test_an_alert_id_is_stable_across_reads(client, graph):
+    """Derived at read time, so the same change must not alert twice."""
+    first = (await client.get("/api/alerts", params={"window_days": 365})).json()
+    second = (await client.get("/api/alerts", params={"window_days": 365})).json()
+
+    assert [a["id"] for a in first] == [a["id"] for a in second]
+
+
+async def test_a_past_cut_off_returns_the_alerts_that_existed_then(client, graph):
+    """The point of deriving rather than storing them."""
+    body = (
+        await client.get(
+            "/api/alerts",
+            params={"as_of": (PUB - timedelta(days=1)).isoformat(), "window_days": 365},
+        )
+    ).json()
+
+    assert body == []
+
+
+async def test_alerts_can_be_narrowed_to_what_is_urgent(client, graph):
+    body = (
+        await client.get("/api/alerts", params={"window_days": 365, "severity": "urgent"})
+    ).json()
+
+    assert body
+    assert all(alert["severity"] == "urgent" for alert in body)

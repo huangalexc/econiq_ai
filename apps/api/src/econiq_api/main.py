@@ -38,6 +38,7 @@ from econiq_api.routers import (
     evidence,
     graph,
     health,
+    monitoring,
     processes,
     runs,
 )
@@ -107,6 +108,7 @@ def create_app(settings: DatabaseSettings | None = None) -> FastAPI:
         capabilities.router,
         assets.router,
         graph.router,
+        monitoring.router,
         runs.router,
     ):
         app.include_router(router)

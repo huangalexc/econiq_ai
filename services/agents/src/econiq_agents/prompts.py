@@ -551,3 +551,86 @@ language, do not estimate returns, and do not compare this Asset to others.\
 """,
     )
 )
+
+
+COUNTERFACTUAL_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="counterfactual",
+        version="1.0.0",
+        description="Alternative worlds in which the Process fails (agent doc §10.1).",
+        template="""\
+Construct the strongest plausible counterfactuals to the following Economic \
+Process.
+
+You are not attacking the evidence. Take the supplied evidence as accurate and \
+ask a different question: what else could have produced it, and what would have \
+to be true instead for this Process not to play out?
+
+Do not use straw men. A counterfactual you can dismiss in a sentence is worse \
+than no counterfactual, because it makes the thesis look tested when it has not \
+been. If an alternative world is genuinely far-fetched, do not include it.
+
+For each alternative world give:
+- challenged_assumption: the load-bearing assumption this world removes. Name \
+one the thesis actually depends on, not an incidental detail.
+- alternative_world: what happens instead, concretely enough that someone could \
+recognise it if it occurred
+- affected_links: the causal steps in the Process that break
+- assets_harmed: which exposures suffer, by name
+- observable_indicators: what would be seen if this were the real world. At \
+least one is required — an alternative world nobody could ever detect is not a \
+research finding.
+- plausibility 0-10: how likely this world is on the evidence available
+- severity_if_true 0-10: how much of the thesis fails if it is the real one
+- the supplied Claim ids it rests on, where it rests on evidence
+
+Then name the index of the single most dangerous one — highest combined \
+plausibility and severity.
+
+Challenge different assumptions. Several counterfactuals that all remove the \
+same assumption are one counterfactual written out several times.
+
+Where the Process Critic's objections are supplied, do not restate them. The \
+two of you are meant to fail the thesis in different ways, and an overlap wastes \
+the more expensive pass.
+
+Do not conclude that the Process survives. Another step weighs what you find \
+against what it is worth; your output is the set of worlds, not the verdict.\
+""",
+    )
+)
+
+
+THESIS_SCORING_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="thesis_scoring",
+        version="1.0.0",
+        description="Multidimensional Thesis Quality (agent doc §11.1; ontology §42).",
+        template="""\
+Score the following Economic Process on the axes listed below.
+
+Score the Process itself. Do not consider any Asset, any valuation, any price \
+or any technical setup — those belong to a different score family and mixing \
+them in is the specific failure this separation exists to prevent.
+
+Score only the axes you are given. Some axes are measured deterministically \
+elsewhere and will be supplied to you already computed — do not score those \
+again, and do not adjust your other scores to be consistent with them.
+
+For each axis give:
+- value 0-10
+- why_not_higher: what is missing or unresolved that keeps it below 10. Every \
+axis needs this. A score with no stated ceiling reason is an assertion; naming \
+what is absent makes it a finding somebody can act on.
+- facts: observations taken directly from the supplied evidence
+- inferences: judgements you made on top of those facts, listed separately. A \
+score resting mostly on inference is a weaker score and the reader is entitled \
+to see that.
+- the supplied Claim ids the axis rests on
+
+Do not produce an overall score, a composite, or a summary judgement. The axes \
+are kept separate deliberately, and a number that blends them is exactly what \
+this scorecard exists to avoid.\
+""",
+    )
+)

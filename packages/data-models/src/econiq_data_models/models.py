@@ -1039,6 +1039,49 @@ class Critique(Base, ObservationMixin):
     )
 
 
+class Counterfactual(Base, ObservationMixin):
+    """An alternative world in which the Process fails (issue #66, agent doc §10.1).
+
+    Distinct from a Critique, and the distinction is the reason this is its own
+    table rather than an eighth ``CritiqueKind``. A critique attacks the
+    evidence that exists; a counterfactual accepts it and asks what else could
+    have produced it. They are answered differently, monitored differently, and
+    scored on different axes — folding them together would make
+    counterfactual_robustness uncomputable, because there would be no way to
+    tell which findings it was supposed to be computed from.
+
+    ``observable_indicators`` is the load-bearing field, as ``testable_with`` is
+    for a Critique: an alternative world nobody could ever detect is not a
+    research finding, and it is the shape a straw man usually takes.
+    """
+
+    __tablename__ = "counterfactuals"
+
+    counterfactual_id: Mapped[uuid.UUID] = uuid_pk()
+    process_id: Mapped[uuid.UUID] = _node_fk()
+    challenged_assumption: Mapped[str] = mapped_column(Text, nullable=False)
+    alternative_world: Mapped[str] = mapped_column(Text, nullable=False)
+    affected_links: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    assets_harmed: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    observable_indicators: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    plausibility: Mapped[float] = mapped_column(Float, nullable=False)
+    severity_if_true: Mapped[float] = mapped_column(Float, nullable=False)
+    is_most_dangerous: Mapped[bool] = mapped_column(nullable=False, default=False)
+    superseded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Set when a later run replaced this set. Never deleted.",
+    )
+    supporting_claim_ids: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    agent_run_id: Mapped[uuid.UUID | None] = _run_fk()
+
+    __table_args__ = (
+        Index("ix_counterfactuals_process", "process_id", "superseded_at", "observed_at"),
+        CheckConstraint("plausibility >= 0 AND plausibility <= 10", name="plausibility_range"),
+        CheckConstraint("severity_if_true >= 0 AND severity_if_true <= 10", name="severity_range"),
+    )
+
+
 class OutboxEvent(Base, TimestampMixin):
     """A typed domain event, written in the same transaction as the state change.
 

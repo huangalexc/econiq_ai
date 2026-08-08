@@ -65,6 +65,8 @@ not the measurement.
 | #24 Provenance inspector | `/api/evidence/{id}/inspect` — Claims with verified spans, their documents, and the run that extracted each |
 | #25 [Explain] | one explanation shape for every derived number, carrying model, prompt version and timestamp |
 | #26 Graph explorer | React Flow over the typed edges, expanded a hop at a time, laid out by ontology layer |
+| #65 Thesis Scoring agent | ten Thesis Quality axes — five measured from rows, four judged, one deferred to Phase 2 |
+| #66 Counterfactual agent | alternative worlds the thesis has to survive, with "no straw men" enforced rather than requested |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000
@@ -90,10 +92,11 @@ prompt version and content hash, cut-off, and whether the deterministic checks
 accepted the output. That is what makes [Explain] a primitive rather than a
 component written once per screen.
 
-The Thesis Quality scorecard lists all nine ontology dimensions. Phase 0 writes
-one (`contradiction`, from the Process Critic); the rest name the agent that
-will write them — #65, #66, #67, or the Phase 2 historical engine. A scorecard
-showing one axis looks like a thesis measured on one axis, and it is not.
+The Thesis Quality scorecard now fills nine of its ten axes. Five are computed
+from rows rather than judged — a model re-scoring a number the system already
+measured is not a second opinion, it is an opportunity to disagree with nothing
+to settle it. Historical precedent stays empty until Phase 2, and
+`evidence_independence` gets a second opinion when #67 lands.
 
 Still open in #20: watchlist and alert CRUD needs users (#19), and Asset
 comparison payloads need the Asset Quality agent (#29).

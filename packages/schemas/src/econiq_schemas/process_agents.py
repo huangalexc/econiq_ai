@@ -17,6 +17,7 @@ from econiq_ontology import (
     ProcessArchetype,
     ProcessStateLabel,
     Score10,
+    ThesisQualityDimension,
     state_machine,
 )
 from pydantic import Field, model_validator
@@ -312,4 +313,151 @@ class ProcessCriticOutput(AgentOutput):
             raise ValueError("most_damaging_critique_index out of range")
         if self.critiques and idx is None:
             raise ValueError("name the most damaging critique when critiques are present")
+        return self
+
+
+# --------------------------------------------------------------------------- #
+# Counterfactual / Falsification agent (issue #66, agent doc §10.1)
+# --------------------------------------------------------------------------- #
+
+
+class Counterfactual(Cited):
+    """One alternative world in which the Process does not play out.
+
+    Distinct from a Critique (agent doc §6.5 vs §10.1): a critique attacks the
+    evidence and reasoning that exist; a counterfactual accepts them and asks
+    what else could have produced them, or what would have to change for the
+    thesis to fail.
+    """
+
+    challenged_assumption: str = Field(
+        min_length=1, description="The load-bearing assumption this world removes."
+    )
+    alternative_world: str = Field(
+        min_length=1, description="What happens instead, stated concretely."
+    )
+    affected_links: list[str] = Field(
+        default_factory=list,
+        description="Causal links in the Process that break in this world.",
+    )
+    assets_harmed: list[str] = Field(
+        default_factory=list,
+        description="Exposures that would be damaged. Names, not identifiers — "
+        "resolution against the Asset universe happens in code.",
+    )
+    observable_indicators: list[str] = Field(
+        min_length=1,
+        description=(
+            "What would be seen if this world were the real one. Required: a "
+            "counterfactual nobody could detect is not a research finding, and "
+            "it is the form a straw man usually takes."
+        ),
+    )
+    plausibility: Score10 = Field(
+        description="How likely this alternative world is, on the evidence available."
+    )
+    severity_if_true: Score10 = Field(
+        description="How much of the thesis fails if it turns out to be the real world."
+    )
+
+
+class CounterfactualInput(AgentInput):
+    process: ProcessSummary
+    thesis_statement: str
+    causal_mechanism: str | None = None
+    supporting_event_summaries: list[str] = Field(default_factory=list)
+    claim_texts: dict[str, str] = Field(default_factory=dict)
+    known_critiques: list[str] = Field(
+        default_factory=list,
+        description=(
+            "What the Critic already said. Supplied so the counterfactual agent "
+            "does not spend its output restating them — the two agents are "
+            "meant to fail the thesis in different ways."
+        ),
+    )
+
+
+class CounterfactualOutput(AgentOutput):
+    """Alternative worlds, with no field in which to conclude the thesis is safe.
+
+    Like the Critic, this agent has one permitted move. `robustness` is
+    deliberately absent: it is computed from these counterfactuals by code
+    (agent doc §2.3), because an agent that both constructs the attacks and
+    scores its own attack quality has no reason to construct good ones.
+    """
+
+    counterfactuals: list[Counterfactual] = Field(default_factory=list)
+    most_dangerous_index: int | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def _index_in_range(self) -> Self:
+        idx = self.most_dangerous_index
+        if idx is not None and idx >= len(self.counterfactuals):
+            raise ValueError("most_dangerous_index out of range")
+        if self.counterfactuals and idx is None:
+            raise ValueError("name the most dangerous counterfactual when any are present")
+        return self
+
+
+# --------------------------------------------------------------------------- #
+# Thesis Scoring agent (issue #65, agent doc §11.1; ontology §42)
+# --------------------------------------------------------------------------- #
+
+
+class AxisScore(Cited):
+    """One Thesis Quality axis, with the reasoning §11.1 requires beside it."""
+
+    dimension: ThesisQualityDimension
+    value: Score10
+    why_not_higher: str = Field(
+        min_length=1,
+        description=(
+            "§11.1 requires this for every axis. A score with no stated ceiling "
+            "reason is an assertion; naming what is missing makes it a finding."
+        ),
+    )
+    facts: list[str] = Field(
+        default_factory=list,
+        description="Observations drawn directly from the evidence.",
+    )
+    inferences: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Judgements the agent made on top of the facts. Kept apart because "
+            "§11.1 asks that fact and inference be distinguished, and because a "
+            "score resting mostly on inference is a weaker score."
+        ),
+    )
+
+
+class ThesisScoringInput(AgentInput):
+    process: ProcessSummary
+    thesis_statement: str
+    causal_mechanism: str | None = None
+    supporting_event_summaries: list[str] = Field(default_factory=list)
+    contradicting_event_summaries: list[str] = Field(default_factory=list)
+    claim_texts: dict[str, str] = Field(default_factory=dict)
+    open_critiques: list[str] = Field(default_factory=list)
+    #: Axes the caller has already measured deterministically. The agent is told
+    #: not to score these, so no axis has two producers.
+    computed_axes: dict[str, float] = Field(default_factory=dict)
+
+
+class ThesisScoringOutput(AgentOutput):
+    """The judgement axes only.
+
+    There is no composite field. Ontology §42 says the dimensions must be
+    preserved even if a composite is eventually calculated, and PRD §10 forbids
+    reducing them to one unexplained number — so nothing here produces one, and
+    the API has no field to put it in for this family.
+    """
+
+    axes: list[AxisScore] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _no_axis_scored_twice(self) -> Self:
+        seen = [axis.dimension for axis in self.axes]
+        duplicates = {d for d in seen if seen.count(d) > 1}
+        if duplicates:
+            raise ValueError(f"axis scored more than once: {sorted(d.value for d in duplicates)}")
         return self

@@ -252,7 +252,16 @@ class ScoreFamily(StrEnum):
 
 class ThesisQualityDimension(StrEnum):
     """Ontology §17 — 'Is the underlying Process real, coherent and likely to
-    continue?'"""
+    continue?'
+
+    The nine axes of ontology §42, plus ``DATA_QUALITY``. Agent doc §11.1 lists
+    ten and §42 lists nine; the extra one is data quality, and it is kept
+    because it asks a question no other axis does — how reliable the underlying
+    observations are, as distinct from how many there are
+    (``ACCUMULATED_EVIDENCE``) or how independent
+    (``EVIDENCE_INDEPENDENCE``). A restated filing and a measured tonnage are
+    not equally good inputs, and without this axis nothing says so.
+    """
 
     LOGICAL_COHERENCE = "logical_coherence"
     ACCUMULATED_EVIDENCE = "accumulated_evidence"
@@ -261,6 +270,7 @@ class ThesisQualityDimension(StrEnum):
     COUNTERFACTUAL_ROBUSTNESS = "counterfactual_robustness"
     EVIDENCE_INDEPENDENCE = "evidence_independence"
     CAUSAL_COHERENCE = "causal_coherence"
+    DATA_QUALITY = "data_quality"
     CONTRADICTION = "contradiction"
     UNCERTAINTY = "uncertainty"
 

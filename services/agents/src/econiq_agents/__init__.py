@@ -51,6 +51,12 @@ from econiq_agents.clustering_metrics import (
     duplicate_suppression_rate,
     evaluate_clustering,
 )
+from econiq_agents.counterfactual_agent import (
+    CounterfactualAgent,
+    DiversityEvaluator,
+    FalsifiabilityEvaluator,
+    PlausibilityEvaluator,
+)
 from econiq_agents.critic_agent import (
     CoverageReport,
     Independence,
@@ -142,6 +148,13 @@ from econiq_agents.state_agents import (
 )
 from econiq_agents.state_persistence import AppliedArchetype, RecordedState, StateWriter
 from econiq_agents.state_stage import ProcessStateStage, StateOutcome
+from econiq_agents.thesis_scorer import (
+    COMPUTED_AXES,
+    JUDGED_AXES,
+    UNAVAILABLE_AXES,
+    ThesisScoringAgent,
+)
+from econiq_agents.thesis_stage import ThesisOutcome, ThesisStage
 
 __all__ = [
     "ASSET_DISCOVERY_V1",
@@ -151,15 +164,18 @@ __all__ = [
     "CAPABILITY_MAPPING_V1",
     "CLAIM_EXTRACTION_V1",
     "COMMODITIES",
+    "COMPUTED_AXES",
     "CURRENCIES",
     "DOCUMENT_CLASSIFIER_V1",
     "EVENT_RESOLUTION_V1",
     "EVENT_SIGNIFICANCE_V1",
+    "JUDGED_AXES",
     "PROCESS_ARCHETYPE_V1",
     "PROCESS_DISCOVERY_V1",
     "PROCESS_STATE_V1",
     "PROCESS_UPDATE_V1",
     "REFERENCE_UNIVERSE",
+    "UNAVAILABLE_AXES",
     "AgentRunRecorder",
     "AppliedArchetype",
     "AppliedUpdate",
@@ -183,8 +199,10 @@ __all__ = [
     "ClusteringMetrics",
     "ConfluenceResult",
     "ConfluenceScopeEvaluator",
+    "CounterfactualAgent",
     "CoverageReport",
     "CritiqueOutcome",
+    "DiversityEvaluator",
     "DocumentClassifierAgent",
     "DocumentExtractionStage",
     "Embedder",
@@ -196,6 +214,7 @@ __all__ = [
     "EventWriter",
     "ExposureWriter",
     "ExtractionOutcome",
+    "FalsifiabilityEvaluator",
     "GraphWriter",
     "HashingEmbedder",
     "IllegalEdgeError",
@@ -212,6 +231,7 @@ __all__ = [
     "PersistedExposures",
     "PersistedProcess",
     "PersistedRequirement",
+    "PlausibilityEvaluator",
     "ProcessArchetypeAgent",
     "ProcessCriticAgent",
     "ProcessCritiqueStage",
@@ -240,6 +260,9 @@ __all__ = [
     "StateTransitionEvaluator",
     "StateWriter",
     "TestabilityEvaluator",
+    "ThesisOutcome",
+    "ThesisScoringAgent",
+    "ThesisStage",
     "TransitionSignificance",
     "WrittenEdge",
     "assess_independence",

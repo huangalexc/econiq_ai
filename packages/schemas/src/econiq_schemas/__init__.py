@@ -61,7 +61,11 @@ from econiq_schemas.event_agents import (
     ProposedEvent,
 )
 from econiq_schemas.process_agents import (
+    AxisScore,
     BeliefChange,
+    Counterfactual,
+    CounterfactualInput,
+    CounterfactualOutput,
     Critique,
     EventSummary,
     FeatureDelta,
@@ -81,6 +85,8 @@ from econiq_schemas.process_agents import (
     ProposedFeature,
     ProposedProcess,
     RejectedArchetype,
+    ThesisScoringInput,
+    ThesisScoringOutput,
 )
 from econiq_schemas.registry import AGENT_CONTRACTS, AgentContract, contract_for
 
@@ -98,6 +104,7 @@ __all__ = [
     "AssetDiscoveryOutput",
     "AssetExposureInput",
     "AssetExposureOutput",
+    "AxisScore",
     "BeliefChange",
     "BottleneckIdentificationInput",
     "BottleneckIdentificationOutput",
@@ -110,6 +117,9 @@ __all__ = [
     "ClaimExtractionInput",
     "ClaimExtractionOutput",
     "ClaimForResolution",
+    "Counterfactual",
+    "CounterfactualInput",
+    "CounterfactualOutput",
     "Critique",
     "CritiqueKind",
     "DocumentClassifierInput",
@@ -152,5 +162,7 @@ __all__ = [
     "RejectedArchetype",
     "ScoredJudgement",
     "SupportIndependence",
+    "ThesisScoringInput",
+    "ThesisScoringOutput",
     "contract_for",
 ]

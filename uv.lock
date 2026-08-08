@@ -16,6 +16,7 @@ members = [
     "econiq-graph",
     "econiq-ingestion",
     "econiq-llm",
+    "econiq-market",
     "econiq-ontology",
     "econiq-orchestration",
     "econiq-schemas",
@@ -357,6 +358,7 @@ dependencies = [
     { name = "econiq-graph" },
     { name = "econiq-ingestion" },
     { name = "econiq-llm" },
+    { name = "econiq-market" },
     { name = "econiq-ontology" },
     { name = "econiq-orchestration" },
     { name = "econiq-schemas" },
@@ -381,6 +383,7 @@ requires-dist = [
     { name = "econiq-graph", editable = "services/graph" },
     { name = "econiq-ingestion", editable = "services/ingestion" },
     { name = "econiq-llm", editable = "packages/llm" },
+    { name = "econiq-market", editable = "services/market" },
     { name = "econiq-ontology", editable = "packages/ontology" },
     { name = "econiq-orchestration", editable = "services/orchestration" },
     { name = "econiq-schemas", editable = "packages/schemas" },
@@ -541,6 +544,25 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.5" },
 ]
 provides-extras = ["anthropic", "openai"]
+
+[[package]]
+name = "econiq-market"
+version = "0.1.0"
+source = { editable = "services/market" }
+dependencies = [
+    { name = "econiq-data-models" },
+    { name = "econiq-ontology" },
+    { name = "httpx" },
+    { name = "pydantic-settings" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "econiq-data-models", editable = "packages/data-models" },
+    { name = "econiq-ontology", editable = "packages/ontology" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "pydantic-settings", specifier = ">=2.5" },
+]
 
 [[package]]
 name = "econiq-ontology"

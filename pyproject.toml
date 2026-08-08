@@ -13,6 +13,7 @@ dependencies = [
     "econiq-graph",
     "econiq-orchestration",
     "econiq-eval",
+    "econiq-market",
     "econiq-api",
 ]
 
@@ -40,6 +41,7 @@ members = [
     "services/graph",
     "services/orchestration",
     "services/eval",
+    "services/market",
     "apps/api",
 ]
 
@@ -53,6 +55,7 @@ econiq-agents = { workspace = true }
 econiq-graph = { workspace = true }
 econiq-orchestration = { workspace = true }
 econiq-eval = { workspace = true }
+econiq-market = { workspace = true }
 econiq-api = { workspace = true }
 
 [tool.ruff]
@@ -96,6 +99,7 @@ mypy_path = [
     "services/graph/src",
     "services/orchestration/src",
     "services/eval/src",
+    "services/market/src",
     "apps/api/src",
 ]
 explicit_package_bases = true

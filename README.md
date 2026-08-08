@@ -71,6 +71,7 @@ not the measurement.
 | #27 Bottleneck & Capability | constraint profiles, the AND/OR requirement tree, and confluence search with AND semantics |
 | #31 Thesis journal | every belief change, immutable, each reaching the run that made it |
 | #32 Semantic alerts | thesis changes rather than price moves, derived at read time |
+| #77 Market data | `services/market` — Tiingo daily and FX, storing raw *and* adjusted closes with both clocks |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000

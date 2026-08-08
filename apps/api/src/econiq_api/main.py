@@ -28,6 +28,7 @@ from econiq_data_models import DatabaseSettings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from econiq_api import auth
 from econiq_api.deps import AppState
 from econiq_api.routers import (
     archetypes,
@@ -42,6 +43,7 @@ from econiq_api.routers import (
     processes,
     runs,
     underwriting,
+    workspace,
 )
 
 DESCRIPTION = """\
@@ -89,12 +91,18 @@ def create_app(settings: DatabaseSettings | None = None) -> FastAPI:
         description=DESCRIPTION,
         lifespan=lifespan,
     )
+    # Before CORS in source order means *after* it at request time, which is
+    # what we want: a preflight must not need a token.
+    app.middleware("http")(auth.verify_presented_token)
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins(),
         # Only reads exist, so only reads are permitted. A write method allowed
         # here would be a route that does not exist — until one day it does.
-        allow_methods=["GET", "OPTIONS"],
+        # PUT and DELETE are for watchlists only (#19). Nothing in the
+        # ontology is writable; those are the only rows a person owns.
+        allow_methods=["GET", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type"],
         allow_credentials=True,
     )
@@ -112,6 +120,7 @@ def create_app(settings: DatabaseSettings | None = None) -> FastAPI:
         monitoring.router,
         runs.router,
         underwriting.router,
+        workspace.router,
     ):
         app.include_router(router)
     return app

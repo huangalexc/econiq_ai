@@ -545,7 +545,14 @@ async def test_there_is_no_endpoint_that_blends_score_families(client):
 
 
 async def test_the_api_offers_no_way_to_write_ontology_objects(client):
-    """A row created here would have no agent run, prompt version or evaluation."""
+    """A row created here would have no agent run, prompt version or evaluation.
+
+    Asserted as "no write touches an ontology path" rather than "no writes at
+    all". Watchlists are writable (#19) and are not ontology: a watchlist entry
+    is a person saying they care, nothing downstream reasons from it, and PRD
+    §23 draws exactly this line. The invariant being protected is that the
+    *graph* stays agent-written.
+    """
     spec = (await client.get("/openapi.json")).json()
 
     writes = {
@@ -554,7 +561,37 @@ async def test_the_api_offers_no_way_to_write_ontology_objects(client):
         for method in methods
         if method.upper() in {"POST", "PUT", "PATCH", "DELETE"}
     }
-    assert writes == set()
+    assert all(path.startswith("/api/workspace/") for _, path in writes), writes
+    # And nothing writable mentions an ontology object.
+    forbidden = ("process", "event", "claim", "bottleneck", "capability", "asset", "score")
+    assert not [path for _, path in writes if any(word in path for word in forbidden)]
+
+
+async def test_workspace_endpoints_refuse_without_an_identity_provider(client):
+    """Running open is a state a deployment must announce, not imitate."""
+    response = await client.get("/api/workspace")
+
+    assert response.status_code == 501
+    assert "CLERK_ISSUER" in response.json()["detail"]
+
+
+async def test_a_forged_token_is_rejected_rather_than_treated_as_anonymous(client, monkeypatch):
+    """Presenting a bad credential is not the same as presenting none; letting
+    it through would hide an attack as a preference."""
+    from econiq_api import auth
+
+    monkeypatch.setattr(auth._verifier, "_issuer", "https://example.clerk.dev")
+
+    response = await client.get("/api/processes", headers={"Authorization": "Bearer nope"})
+
+    assert response.status_code == 401
+
+
+async def test_the_graph_is_readable_without_signing_in(client, graph):
+    """PRD §23: the canonical Process graph is system-wide. Gating it would turn
+    a shared research asset into a per-tenant silo."""
+    for path in ("/api/processes", "/api/discover", f"/api/processes/{graph['process']}"):
+        assert (await client.get(path)).status_code == 200
 
 
 async def test_agent_runs_expose_cost_and_evaluation(client, graph):

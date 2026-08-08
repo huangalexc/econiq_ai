@@ -3,6 +3,8 @@
 import { useAsOf } from "@/lib/as-of";
 import { cn } from "@/lib/utils";
 
+import { SessionControl } from "./session-control";
+
 import { AsOfControl } from "./as-of-control";
 import { SearchBar } from "./search-bar";
 import { Sidebar } from "./sidebar";
@@ -31,6 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <AsOfControl />
         <ThemeToggle />
+        <SessionControl />
       </header>
 
       {isHistorical ? (

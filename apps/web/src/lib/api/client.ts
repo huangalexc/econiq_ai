@@ -43,6 +43,8 @@ export interface RequestOptions {
    */
   asOf?: string | null;
   signal?: AbortSignal;
+  /** Only the watchlist endpoints use anything but GET (#19). */
+  method?: "GET" | "PUT" | "DELETE";
 }
 
 function buildQuery(query: Query | undefined, asOf: string | null | undefined) {
@@ -65,11 +67,33 @@ function buildQuery(query: Query | undefined, asOf: string | null | undefined) {
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
+/**
+ * How to get the current session token, installed by the Clerk provider (#19).
+ *
+ * A function rather than a value: Clerk's tokens are short-lived and refresh in
+ * the background, so a captured string works for a minute and then starts
+ * failing in a way that reads as an API outage.
+ */
+type TokenSource = () => Promise<string | null>;
+
+let tokenSource: TokenSource | null = null;
+
+export function setTokenSource(source: TokenSource | null) {
+  tokenSource = source;
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const url = `${API_BASE_URL}${path}${buildQuery(options.query, options.asOf)}`;
+  const headers: Record<string, string> = { Accept: "application/json" };
+  // Absent when signed out, which is a supported state: the graph is public
+  // and only workspace endpoints need identity (PRD §23).
+  const token = tokenSource ? await tokenSource() : null;
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const response = await fetch(url, {
+    method: options.method ?? "GET",
     signal: options.signal,
-    headers: { Accept: "application/json" },
+    headers,
   });
 
   if (!response.ok) {
@@ -85,6 +109,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw new ApiError(response.status, detail, path);
   }
 
+  // 204 on unwatch: there is no body, and parsing one would throw on the
+  // happy path.
+  if (response.status === 204) return null as T;
   return (await response.json()) as T;
 }
 
@@ -231,6 +258,25 @@ export const api = {
     list: (options?: RequestOptions) => request<Ok<"/api/runs">>("/api/runs", options),
     get: (id: string, options?: RequestOptions) =>
       request<Ok<"/api/runs/{run_id}">>(`/api/runs/${id}`, options),
+  },
+
+  workspace: {
+    current: (options?: RequestOptions) =>
+      request<Ok<"/api/workspace">>("/api/workspace", options),
+    watchlist: (options?: RequestOptions) =>
+      request<Ok<"/api/workspace/watchlist">>("/api/workspace/watchlist", options),
+    watch: (nodeId: string, options?: RequestOptions) =>
+      request<Ok<"/api/workspace/watchlist/{node_id}">>(
+        `/api/workspace/watchlist/${nodeId}`,
+        { ...options, method: "PUT" },
+      ),
+    unwatch: (nodeId: string, options?: RequestOptions) =>
+      request<null>(`/api/workspace/watchlist/${nodeId}`, {
+        ...options,
+        method: "DELETE",
+      }),
+    alerts: (options?: RequestOptions) =>
+      request<Ok<"/api/workspace/alerts">>("/api/workspace/alerts", options),
   },
 
   pipeline: {

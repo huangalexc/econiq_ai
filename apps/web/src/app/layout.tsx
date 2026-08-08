@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { ClerkProvider } from "@clerk/nextjs";
+
 import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/shell/app-shell";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
@@ -34,9 +36,12 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="h-full">
-        <Providers>
-          <AppShell>{children}</AppShell>
-        </Providers>
+        {/* Clerk outermost so the token hook is available to the API client. */}
+        <ClerkProvider>
+          <Providers>
+            <AppShell>{children}</AppShell>
+          </Providers>
+        </ClerkProvider>
       </body>
     </html>
   );

@@ -18,8 +18,11 @@
  * both what the system knows and what it has not been built to know yet.
  */
 
+import { SignInButton, useAuth } from "@clerk/nextjs";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 
+import { api } from "@/lib/api/client";
 import type { ProcessDetail, Scorecard } from "@/lib/api/client";
 import { cn, confidenceClass, humanise } from "@/lib/utils";
 
@@ -60,16 +63,7 @@ export function ProcessHeader({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Track needs a user to track it for (#19); saying so beats a button
-              that silently does nothing. */}
-          <button
-            type="button"
-            disabled
-            title="Watchlists need users and workspaces (#19)"
-            className="cursor-not-allowed rounded border border-border px-3 py-1.5 text-sm text-ink-subtle"
-          >
-            Track
-          </button>
+          <TrackButton processId={process.id} />
           <Link
             href={`/graph?node=${process.id}`}
             className="rounded border border-border px-3 py-1.5 text-sm text-ink-muted hover:text-ink"
@@ -176,5 +170,63 @@ function Unavailable({ label, reason }: { label: string; reason: string }) {
         not yet measured
       </dd>
     </div>
+  );
+}
+
+
+/**
+ * Track (issues #19, #32).
+ *
+ * Signed out this is a sign-in prompt rather than a disabled button: the reader
+ * cannot act, but the reason is a session rather than a missing feature, and
+ * those look identical when a control is merely greyed out.
+ */
+function TrackButton({ processId }: { processId: string }) {
+  const { isSignedIn } = useAuth();
+  const queryClient = useQueryClient();
+  const watchlist = useQuery({
+    queryKey: ["watchlist", "now", null],
+    queryFn: ({ signal }) => api.workspace.watchlist({ signal }),
+    enabled: Boolean(isSignedIn),
+  });
+
+  const watched = (watchlist.data ?? []).some((item) => item.node.id === processId);
+  const toggle = useMutation({
+    mutationFn: () =>
+      watched
+        ? api.workspace.unwatch(processId)
+        : api.workspace.watch(processId).then(() => null),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+    },
+  });
+
+  if (!isSignedIn) {
+    return (
+      <SignInButton mode="modal">
+        <button
+          type="button"
+          className="rounded border border-border px-3 py-1.5 text-sm text-ink-muted hover:text-ink"
+        >
+          Sign in to track
+        </button>
+      </SignInButton>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => toggle.mutate()}
+      disabled={toggle.isPending}
+      className={cn(
+        "rounded border px-3 py-1.5 text-sm",
+        watched
+          ? "border-accent text-accent"
+          : "border-border text-ink-muted hover:text-ink",
+      )}
+    >
+      {watched ? "Tracking" : "Track"}
+    </button>
   );
 }

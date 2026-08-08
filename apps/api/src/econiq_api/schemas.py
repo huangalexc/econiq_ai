@@ -883,3 +883,26 @@ class CounterfactualOut(ApiModel):
     @property
     def threat(self) -> float:
         return (self.plausibility / 10.0) * (self.severity_if_true / 10.0)
+
+
+# --------------------------------------------------------------------------- #
+# Workspace (issue #19)
+# --------------------------------------------------------------------------- #
+
+
+class WorkspaceOut(ApiModel):
+    id: uuid.UUID
+    name: str
+    kind: str
+    external_id: str
+    user_id: str
+
+
+class WatchlistItemOut(ApiModel):
+    """A node someone is watching. The node itself is shared; this is not."""
+
+    id: uuid.UUID
+    node: NodeRef
+    note: str | None = None
+    added_by: str
+    added_at: datetime

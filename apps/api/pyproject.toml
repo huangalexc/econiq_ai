@@ -8,6 +8,7 @@ dependencies = [
     "econiq-data-models",
     "econiq-graph",
     "econiq-agents",
+    "pyjwt[crypto]>=2.9",
     "econiq-orchestration",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",

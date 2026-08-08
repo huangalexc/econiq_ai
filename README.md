@@ -77,6 +77,7 @@ not the measurement.
 | #28 Asset page | the discovery chain, rendered as a chain, with the rationale on every edge |
 | #29 Comparison matrix | side by side per Capability; weights belong to the reader, gaps say why |
 | #30 Underwriting | why this / why now / why not, the last fed by the Counterfactual agent |
+| #19 Auth & workspaces | Clerk sessions, workspace-scoped watchlists — the graph itself stays public |
 
 ```bash
 cd apps/web && npm install && npm run dev   # needs the API on :8000

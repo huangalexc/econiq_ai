@@ -1122,6 +1122,91 @@ class EvidenceDependence(Base, ObservationMixin):
     )
 
 
+class Workspace(Base, TimestampMixin):
+    """A permission boundary for personal research (issue #19; PRD §23).
+
+    PRD §23 draws the line this whole model rests on: *"the canonical Process
+    graph may be system-wide while user notes, watchlists, hypotheses, and
+    annotations remain permissioned."* So nothing in the ontology has an owner —
+    a Process discovered from public evidence is not anybody's — and only the
+    objects a person made about it live here.
+
+    That split is why authentication is not a gate on reading the graph. Making
+    it one would have been the easier design and would have quietly turned a
+    shared research asset into a per-tenant silo.
+    """
+
+    __tablename__ = "workspaces"
+
+    workspace_id: Mapped[uuid.UUID] = uuid_pk()
+    #: Clerk's organization id, or the user id for a personal workspace. The
+    #: identity provider owns identity; this table owns what identity may see.
+    external_id: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    kind: Mapped[str] = mapped_column(
+        String(16), nullable=False, comment="'personal' or 'organization'."
+    )
+
+    __table_args__ = (CheckConstraint("kind IN ('personal','organization')", name="kind_known"),)
+
+
+class WorkspaceMember(Base, TimestampMixin):
+    """Who may see a workspace, and with what authority."""
+
+    __tablename__ = "workspace_members"
+
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("workspaces.workspace_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    external_user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    role: Mapped[str] = mapped_column(String(16), nullable=False, default="member")
+
+    __table_args__ = (
+        CheckConstraint("role IN ('owner','admin','member','viewer')", name="role_known"),
+    )
+
+
+class WatchlistItem(Base, TimestampMixin):
+    """A node someone is watching, scoped to a workspace (issues #19, #32).
+
+    Watching is an opinion about relevance, which is why it is permissioned and
+    the node it points at is not. Two workspaces watching one Process are two
+    opinions about one shared object.
+    """
+
+    __tablename__ = "watchlist_items"
+
+    watchlist_item_id: Mapped[uuid.UUID] = uuid_pk()
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("workspaces.workspace_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    node_id: Mapped[uuid.UUID] = _node_fk()
+    node_type: Mapped[EntityType] = mapped_column(e.ENTITY_TYPE, nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    added_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    removed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Un-watching is a dated fact, not a delete: when someone stopped "
+        "caring is part of the research record.",
+    )
+
+    __table_args__ = (
+        Index(
+            "uq_watchlist_active",
+            "workspace_id",
+            "node_id",
+            unique=True,
+            postgresql_where=text("removed_at IS NULL"),
+        ),
+    )
+
+
 class OutboxEvent(Base, TimestampMixin):
     """A typed domain event, written in the same transaction as the state change.
 

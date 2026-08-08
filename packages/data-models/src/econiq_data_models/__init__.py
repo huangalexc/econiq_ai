@@ -46,7 +46,10 @@ from econiq_data_models.models import (
     RequirementNode,
     Scorecard,
     ScoreDimension,
+    WatchlistItem,
     WorkItem,
+    Workspace,
+    WorkspaceMember,
 )
 from econiq_data_models.session import (
     DatabaseSettings,
@@ -95,8 +98,11 @@ __all__ = [
     "ScoreDimension",
     "Scorecard",
     "ValueBasis",
+    "WatchlistItem",
     "WorkItem",
     "WorkStatus",
+    "Workspace",
+    "WorkspaceMember",
     "create_engine",
     "create_session_factory",
     "session_scope",

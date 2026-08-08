@@ -161,7 +161,7 @@ def _ingest(session_factory, text: str = PRICES) -> MarketIngest:
 
 @pytest.mark.integration
 async def test_prices_land_with_both_clocks(session_factory):
-    asset_id = await _asset(session_factory, ticker="MP", asset_class=AssetClass.COMMON_STOCK)
+    await _asset(session_factory, ticker="MP", asset_class=AssetClass.COMMON_STOCK)
     fetched = datetime(2026, 3, 5, 12, tzinfo=UTC)
 
     result = await _ingest(session_factory).run(now=fetched, start=date(2026, 3, 1))

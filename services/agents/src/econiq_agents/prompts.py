@@ -551,3 +551,209 @@ language, do not estimate returns, and do not compare this Asset to others.\
 """,
     )
 )
+
+
+COUNTERFACTUAL_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="counterfactual",
+        version="1.0.0",
+        description="Alternative worlds in which the Process fails (agent doc §10.1).",
+        template="""\
+Construct the strongest plausible counterfactuals to the following Economic \
+Process.
+
+You are not attacking the evidence. Take the supplied evidence as accurate and \
+ask a different question: what else could have produced it, and what would have \
+to be true instead for this Process not to play out?
+
+Do not use straw men. A counterfactual you can dismiss in a sentence is worse \
+than no counterfactual, because it makes the thesis look tested when it has not \
+been. If an alternative world is genuinely far-fetched, do not include it.
+
+For each alternative world give:
+- challenged_assumption: the load-bearing assumption this world removes. Name \
+one the thesis actually depends on, not an incidental detail.
+- alternative_world: what happens instead, concretely enough that someone could \
+recognise it if it occurred
+- affected_links: the causal steps in the Process that break
+- assets_harmed: which exposures suffer, by name
+- observable_indicators: what would be seen if this were the real world. At \
+least one is required — an alternative world nobody could ever detect is not a \
+research finding.
+- plausibility 0-10: how likely this world is on the evidence available
+- severity_if_true 0-10: how much of the thesis fails if it is the real one
+- the supplied Claim ids it rests on, where it rests on evidence
+
+Then name the index of the single most dangerous one — highest combined \
+plausibility and severity.
+
+Challenge different assumptions. Several counterfactuals that all remove the \
+same assumption are one counterfactual written out several times.
+
+Where the Process Critic's objections are supplied, do not restate them. The \
+two of you are meant to fail the thesis in different ways, and an overlap wastes \
+the more expensive pass.
+
+Do not conclude that the Process survives. Another step weighs what you find \
+against what it is worth; your output is the set of worlds, not the verdict.\
+""",
+    )
+)
+
+
+THESIS_SCORING_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="thesis_scoring",
+        version="1.0.0",
+        description="Multidimensional Thesis Quality (agent doc §11.1; ontology §42).",
+        template="""\
+Score the following Economic Process on the axes listed below.
+
+Score the Process itself. Do not consider any Asset, any valuation, any price \
+or any technical setup — those belong to a different score family and mixing \
+them in is the specific failure this separation exists to prevent.
+
+Score only the axes you are given. Some axes are measured deterministically \
+elsewhere and will be supplied to you already computed — do not score those \
+again, and do not adjust your other scores to be consistent with them.
+
+For each axis give:
+- value 0-10
+- why_not_higher: what is missing or unresolved that keeps it below 10. Every \
+axis needs this. A score with no stated ceiling reason is an assertion; naming \
+what is absent makes it a finding somebody can act on.
+- facts: observations taken directly from the supplied evidence
+- inferences: judgements you made on top of those facts, listed separately. A \
+score resting mostly on inference is a weaker score and the reader is entitled \
+to see that.
+- the supplied Claim ids the axis rests on
+
+Do not produce an overall score, a composite, or a summary judgement. The axes \
+are kept separate deliberately, and a number that blends them is exactly what \
+this scorecard exists to avoid.\
+""",
+    )
+)
+
+
+EVIDENCE_INDEPENDENCE_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="evidence_independence",
+        version="1.0.0",
+        description="Cross-Event evidence dependence (agent doc §10.2).",
+        template="""\
+Decide which of the supplied pairs of Events rest on the same underlying \
+observation.
+
+Twenty articles repeating one report are not twenty pieces of evidence. Pairs \
+that share a document or a publisher have already been settled and are not \
+shown to you. What remains are the cases only reading the content can decide.
+
+Report a dependence only where you find one, using one of:
+
+    shared_source           both rest on the same primary document or \
+statement, reported separately. Two outlets writing up one press release are \
+one observation.
+    derivative_reporting    one is reporting the other rather than observing \
+independently. Look for attribution, and for a later item that adds nothing the \
+earlier one did not contain.
+    repeated_claim          the same assertion restated with no new observation \
+behind it. A company repeating its own guidance is not new evidence of that \
+guidance.
+
+Say nothing about pairs you find independent. Independence is the default; a \
+list confirming it would be as long as the input and would tell nobody anything.
+
+Two Events about the same subject are not dependent for that reason. A separate \
+observation of the same situation is exactly what independent corroboration is, \
+and marking it dependent destroys the signal this analysis exists to protect. \
+Require evidence that one rests on the other, not merely that they agree.
+
+For each dependence give the direction — which Event is the source and which \
+leans on it — the kind, a rationale naming what made you decide, and your \
+confidence.\
+""",
+    )
+)
+
+
+ASSET_QUALITY_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="asset_quality",
+        version="1.0.0",
+        description="Qualitative Asset characteristics (agent doc §8.4).",
+        template="""\
+Evaluate this Asset as an expression of the specified Capability.
+
+That framing is the whole task. You are not rating a company. The same company \
+is a strong expression of one Capability and a weak expression of another, and \
+the question is only ever how well this one carries this Capability.
+
+Score only the axes you are given. Some are measured from price data and will \
+be supplied already computed — do not score those, and do not adjust your own \
+scores to agree with them.
+
+For each axis give:
+- value 0-10
+- why_not_higher: what keeps it below 10. Every axis needs one.
+- facts: what you can point to in the supplied evidence
+- inferences: judgements you made on top of those facts, listed separately
+- counterarguments: the case against your own score. An assessment with no \
+stated counterargument is a pitch.
+
+Do not consider valuation, price level, or technical setup. Those belong to a \
+different analysis and mixing them in is the specific failure the score \
+families exist to prevent. Do not offer a view on whether the underlying \
+economic Process is real — that is a separate score about a separate object.
+
+Separate what you observed from what you concluded. An axis resting mostly on \
+inference is a weaker score and the reader is entitled to see that.\
+""",
+    )
+)
+
+
+RESEARCH_ASSISTANT_V1 = PROMPTS.register(
+    PromptTemplate(
+        name="research_assistant",
+        version="1.0.0",
+        description="Translate a research question into a structured read (ui_concept §4, §22).",
+        template="""\
+Translate the question into a structured read of the research graph.
+
+You are not answering the question. You are deciding which stored data would \
+answer it. Something else runs your plan and assembles the answer from the rows \
+that come back, so a plan is the only useful thing you can produce here — prose \
+would be an answer nobody checked against the graph.
+
+Choose one resource:
+
+    discover          Processes ranked by how much their evidence moved
+    processes         the Process list, filterable
+    process_detail    one Process: State, bottlenecks, critiques, evidence counts
+    timeline          one Process's State changes, belief changes and evidence
+    journal           belief changes across Processes, newest first
+    alerts            what changed recently, as thesis changes rather than prices
+    capabilities      the Capability list
+    confluence        Capabilities that several named Processes all require
+    assets            the Asset list
+    comparison        Assets expressing one Capability, side by side
+    counterfactuals   alternative worlds one Process has to survive
+    evidence          the Claims and documents behind one node
+
+Give the filters the question implies, using only these operators: eq, in, \
+gte, lte. Give the subject id when the question is about the thing currently on \
+screen.
+
+If the graph does not hold what the question asks for, say so in \
+unsupported_reason and give no plan. That is a good answer. A plan that returns \
+something adjacent to the question is worse than an admission, because the \
+reader cannot tell the difference from the rows alone.
+
+Questions about the future, about price, about what someone should buy, or \
+about anything outside the recorded graph are unsupported. This system records \
+what is known and how it was learned; it does not forecast and it does not \
+advise.\
+""",
+    )
+)

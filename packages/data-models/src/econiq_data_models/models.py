@@ -27,6 +27,7 @@ from econiq_ontology import (
     EntityType,
     EpistemicStatus,
     EventType,
+    EvidenceDependenceKind,
     ExposureKind,
     ExtractionStatus,
     LogicOperator,
@@ -1036,6 +1037,173 @@ class Critique(Base, ObservationMixin):
     __table_args__ = (
         Index("ix_critiques_subject_status", "subject_id", "status", "observed_at"),
         CheckConstraint("severity >= 0 AND severity <= 10", name="severity_range"),
+    )
+
+
+class Counterfactual(Base, ObservationMixin):
+    """An alternative world in which the Process fails (issue #66, agent doc §10.1).
+
+    Distinct from a Critique, and the distinction is the reason this is its own
+    table rather than an eighth ``CritiqueKind``. A critique attacks the
+    evidence that exists; a counterfactual accepts it and asks what else could
+    have produced it. They are answered differently, monitored differently, and
+    scored on different axes — folding them together would make
+    counterfactual_robustness uncomputable, because there would be no way to
+    tell which findings it was supposed to be computed from.
+
+    ``observable_indicators`` is the load-bearing field, as ``testable_with`` is
+    for a Critique: an alternative world nobody could ever detect is not a
+    research finding, and it is the shape a straw man usually takes.
+    """
+
+    __tablename__ = "counterfactuals"
+
+    counterfactual_id: Mapped[uuid.UUID] = uuid_pk()
+    process_id: Mapped[uuid.UUID] = _node_fk()
+    challenged_assumption: Mapped[str] = mapped_column(Text, nullable=False)
+    alternative_world: Mapped[str] = mapped_column(Text, nullable=False)
+    affected_links: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    assets_harmed: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    observable_indicators: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    plausibility: Mapped[float] = mapped_column(Float, nullable=False)
+    severity_if_true: Mapped[float] = mapped_column(Float, nullable=False)
+    is_most_dangerous: Mapped[bool] = mapped_column(nullable=False, default=False)
+    superseded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Set when a later run replaced this set. Never deleted.",
+    )
+    supporting_claim_ids: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    agent_run_id: Mapped[uuid.UUID | None] = _run_fk()
+
+    __table_args__ = (
+        Index("ix_counterfactuals_process", "process_id", "superseded_at", "observed_at"),
+        CheckConstraint("plausibility >= 0 AND plausibility <= 10", name="plausibility_range"),
+        CheckConstraint("severity_if_true >= 0 AND severity_if_true <= 10", name="severity_range"),
+    )
+
+
+class EvidenceDependence(Base, ObservationMixin):
+    """One reason two pieces of evidence are not independent (issue #67).
+
+    Directed: ``dependent_event_id`` leans on ``source_event_id``. The direction
+    matters for derivative reporting — a wire story and the paper that picked it
+    up are not symmetric, and the effective source count should keep the
+    original rather than whichever row was written first.
+
+    Stored as its own table rather than as a `derived_from` edge because the
+    kind is computed on: the effective independent-source count comes from the
+    connected components of this graph, and a kind kept in an edge's prose
+    rationale could not be read by the code that needs it.
+    """
+
+    __tablename__ = "evidence_dependencies"
+
+    evidence_dependence_id: Mapped[uuid.UUID] = uuid_pk()
+    process_id: Mapped[uuid.UUID] = _node_fk()
+    source_event_id: Mapped[uuid.UUID] = _node_fk()
+    dependent_event_id: Mapped[uuid.UUID] = _node_fk()
+    kind: Mapped[EvidenceDependenceKind] = mapped_column(
+        e.EVIDENCE_DEPENDENCE_KIND, nullable=False, index=True
+    )
+    rationale: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence: Mapped[float] = _confidence()
+    detected_by: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        comment="'computed' or 'judged' — whether code or an agent found it.",
+    )
+    superseded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    agent_run_id: Mapped[uuid.UUID | None] = _run_fk()
+
+    __table_args__ = (
+        Index("ix_evidence_dependencies_process", "process_id", "superseded_at"),
+        CheckConstraint("source_event_id <> dependent_event_id", name="no_self_dependence"),
+    )
+
+
+class Workspace(Base, TimestampMixin):
+    """A permission boundary for personal research (issue #19; PRD §23).
+
+    PRD §23 draws the line this whole model rests on: *"the canonical Process
+    graph may be system-wide while user notes, watchlists, hypotheses, and
+    annotations remain permissioned."* So nothing in the ontology has an owner —
+    a Process discovered from public evidence is not anybody's — and only the
+    objects a person made about it live here.
+
+    That split is why authentication is not a gate on reading the graph. Making
+    it one would have been the easier design and would have quietly turned a
+    shared research asset into a per-tenant silo.
+    """
+
+    __tablename__ = "workspaces"
+
+    workspace_id: Mapped[uuid.UUID] = uuid_pk()
+    #: Clerk's organization id, or the user id for a personal workspace. The
+    #: identity provider owns identity; this table owns what identity may see.
+    external_id: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    kind: Mapped[str] = mapped_column(
+        String(16), nullable=False, comment="'personal' or 'organization'."
+    )
+
+    __table_args__ = (CheckConstraint("kind IN ('personal','organization')", name="kind_known"),)
+
+
+class WorkspaceMember(Base, TimestampMixin):
+    """Who may see a workspace, and with what authority."""
+
+    __tablename__ = "workspace_members"
+
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("workspaces.workspace_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    external_user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    role: Mapped[str] = mapped_column(String(16), nullable=False, default="member")
+
+    __table_args__ = (
+        CheckConstraint("role IN ('owner','admin','member','viewer')", name="role_known"),
+    )
+
+
+class WatchlistItem(Base, TimestampMixin):
+    """A node someone is watching, scoped to a workspace (issues #19, #32).
+
+    Watching is an opinion about relevance, which is why it is permissioned and
+    the node it points at is not. Two workspaces watching one Process are two
+    opinions about one shared object.
+    """
+
+    __tablename__ = "watchlist_items"
+
+    watchlist_item_id: Mapped[uuid.UUID] = uuid_pk()
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("workspaces.workspace_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    node_id: Mapped[uuid.UUID] = _node_fk()
+    node_type: Mapped[EntityType] = mapped_column(e.ENTITY_TYPE, nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    added_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    removed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Un-watching is a dated fact, not a delete: when someone stopped "
+        "caring is part of the research record.",
+    )
+
+    __table_args__ = (
+        Index(
+            "uq_watchlist_active",
+            "workspace_id",
+            "node_id",
+            unique=True,
+            postgresql_where=text("removed_at IS NULL"),
+        ),
     )
 
 

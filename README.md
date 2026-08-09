@@ -53,6 +53,122 @@ reassigned to Phase 1 alongside the Asset comparison matrix (#29). The check
 still runs and still reports what it finds — a deferral suspends the verdict,
 not the measurement.
 
+## Phase 1 — research terminal
+
+| Issue | Delivered |
+|---|---|
+| #18 App shell | `apps/web` — Next.js 16 + Tailwind 4, sidebar per ui_concept §3, ⌘K command bar, a global `as_of` control, and an API client generated from the FastAPI OpenAPI document |
+| #20 BFF endpoints | `/api/discover` — Processes ranked by evidence movement, every rank decomposable; `/api/processes/{id}/timeline` — state, belief, evidence and critique on one axis |
+| #21 Discover screen | the emerging-Process panel, hot cards and the screener, with [Explain] on every rank |
+| #22 Emergence Radar | maturity against evidence acceleration, positioned from the archetype's State machine |
+| #23 Process screen | four synchronised perspectives over one `as_of`: overview, State evolution, evidence timeline, dependency graph |
+| #24 Provenance inspector | `/api/evidence/{id}/inspect` — Claims with verified spans, their documents, and the run that extracted each |
+| #25 [Explain] | one explanation shape for every derived number, carrying model, prompt version and timestamp |
+| #26 Graph explorer | React Flow over the typed edges, expanded a hop at a time, laid out by ontology layer |
+| #65 Thesis Scoring agent | ten Thesis Quality axes — five measured from rows, four judged, one deferred to Phase 2 |
+| #66 Counterfactual agent | alternative worlds the thesis has to survive, with "no straw men" enforced rather than requested |
+| #67 Evidence Independence | cross-Event dependence graph; code finds what is structural, the agent judges the rest |
+| #27 Bottleneck & Capability | constraint profiles, the AND/OR requirement tree, and confluence search with AND semantics |
+| #31 Thesis journal | every belief change, immutable, each reaching the run that made it |
+| #32 Semantic alerts | thesis changes rather than price moves, derived at read time |
+| #77 Market data | `services/market` — Tiingo daily and FX, storing raw *and* adjusted closes with both clocks |
+| #75 Asset Quant | reproducible price metrics computed by code; five of §8.3's nine analyses named as unsourceable |
+| #76 Asset Quality | qualitative axes judged per Capability, with valuation language refused |
+| #28 Asset page | the discovery chain, rendered as a chain, with the rationale on every edge |
+| #29 Comparison matrix | side by side per Capability; weights belong to the reader, gaps say why |
+| #30 Underwriting | why this / why now / why not, the last fed by the Counterfactual agent |
+| #19 Auth & workspaces | Clerk sessions, workspace-scoped watchlists — the graph itself stays public |
+| #33 Research assistant | questions become structured reads; the model never writes the answer |
+| #34 Live updates | SSE off the transactional outbox, carrying invalidations rather than data |
+
+```bash
+cd apps/web && npm install && npm run dev   # needs the API on :8000
+```
+
+The `as_of` cut-off lives in the URL and in every query key, so a reconstructed
+view is linkable and can never share a cache entry with the present. When one is
+set the whole header changes colour — mistaking a reconstruction for the current
+state is worse than not having the feature.
+
+The Discover ranking returns its own limits. Of the eight inputs ui_concept §5.1
+asks for, six are computed, market attention is proxied by publisher count (and
+named `source_breadth`, because it is media coverage), and historical analogue
+strength needs Phase 2. The API says which are missing and the screen renders it.
+
+Archetype State machines are served from `/api/archetypes` rather than copied
+into the client. The sequence defines which States are adjacent, and an inlined
+copy would drift the first time an archetype gained one — as the S-curve did
+during Phase 0.
+
+Every derived number carries a uniform provenance envelope — agent, model,
+prompt version and content hash, cut-off, and whether the deterministic checks
+accepted the output. That is what makes [Explain] a primitive rather than a
+component written once per screen.
+
+The Thesis Quality scorecard now fills nine of its ten axes. Five are computed
+from rows rather than judged — a model re-scoring a number the system already
+measured is not a second opinion, it is an opportunity to disagree with nothing
+to settle it. Historical precedent stays empty until Phase 2.
+
+`evidence_independence` counts *effective* sources: the dependence graph is
+collapsed into connected components, so four Events all citing one filing count
+once rather than four.
+
+Alerts are derived when read rather than stored, so a past `as_of` returns the
+alerts that existed then, and one whose underlying change was later superseded
+stops existing rather than lingering. Watchlist filtering plugs into the same
+endpoint once users exist (#19).
+
+The comparison matrix shows four scored dimensions and six that say *not
+sourced*, each with the reason. Fundamentals, valuation, balance sheet and
+ownership need a data tier this deployment does not have; commodities need a
+price source Tiingo does not cover. A labelled gap beats a plausible number —
+once a guessed valuation and a measured one both render as numbers, nobody can
+tell them apart.
+
+**Phase 1 is complete.** Phase 2 — the historical engine (#35–#46) — is under
+way.
+
+## Phase 2 — historical engine
+
+| Issue | Delivered |
+|---|---|
+| #35 Vendor abstraction | `MarketDataProvider` with declared coverage; survivorship-free universe |
+| #36 Analytical layer | immutable Parquet snapshots, DuckDB views, Polars frames |
+| #38 Outcome engine | deterministic forward outcomes, observation date frozen at construction |
+| #44 Forward returns | empirical distributions — what happened, never what will |
+
+```bash
+uv run python -c "..."   # export a snapshot; see services/market/warehouse.py
+```
+
+Snapshots are immutable and carry both clocks. `as_known_at` filters on
+`observed_at` **and** `recorded_at` — dropping the second is the mistake that
+makes a backtest look brilliant, because it hands every past day the adjustment
+factors that only exist after later corporate actions.
+
+**Phase 2 is split along its data dependency.** The Asset half runs on price
+history and is being built now; the Process half — historical Process timelines
+and State snapshots (#37), and the Process side of State-conditioned episodes
+(#40) — needs a document archive spanning past episodes, which is being
+assembled separately. Those issues are parked rather than half-built on
+synthetic data.
+
+Forward returns are phrased as ontology §35 requires: *"among historically
+comparable situations, the subsequent 12-month return was…"*, never a
+probability. `Distribution` has no `probability` field and no `expected_return`,
+small samples say so in their own sentence, and censored episodes are counted
+rather than dropped — excluding them biases the sample toward episodes that
+already resolved.
+
+#35 is delivered in the half the data supports. Tiingo serves two of tech rec
+§19's seven facets; fundamentals, ownership, commodities and macro are declared
+missing with reasons rather than stubbed, because a provider returning an empty
+list is indistinguishable from a company with no fundamentals.
+
+Open follow-ups from Phase 1: fundamentals and commodity prices (#75, #77 note
+the gaps), and the Process causal mechanism (#74).
+
 ## Quick start
 
 ```bash

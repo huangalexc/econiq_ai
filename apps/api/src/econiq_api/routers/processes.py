@@ -15,6 +15,7 @@ from typing import Annotated
 from econiq_data_models import (
     Bottleneck,
     Critique,
+    Event,
     EvidenceLink,
     JournalEntry,
     Process,
@@ -26,6 +27,7 @@ from fastapi import APIRouter, Query
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from econiq_api import provenance
 from econiq_api.deps import AsOfDep, PageDep, SessionDep
 from econiq_api.errors import not_found
 from econiq_api.schemas import (
@@ -35,7 +37,10 @@ from econiq_api.schemas import (
     ProcessDetailOut,
     ProcessStateOut,
     ProcessSummaryOut,
+    ProcessTimelineOut,
+    ProvenanceOut,
     StateFeatureOut,
+    TimelineEntryOut,
 )
 from econiq_api.temporal import current_revision, recorded_by
 
@@ -109,11 +114,20 @@ async def get_process(
     # state_confidence of 0.82 with no visible basis is exactly the unexplained
     # number this API is not supposed to return.
     features = await _features(session, [state.process_state_id] if state else [])
+    attribution = await provenance.load(session, [state.agent_run_id] if state is not None else [])
 
     detail = _summary(process, state)
     return ProcessDetailOut(
         **detail.model_dump(),
-        state=(_state_out(state, features.get(state.process_state_id, [])) if state else None),
+        state=(
+            _state_out(
+                state,
+                features.get(state.process_state_id, []),
+                attribution.get(state.agent_run_id) if state.agent_run_id else None,
+            )
+            if state
+            else None
+        ),
         open_bottlenecks=[BottleneckOut.from_row(b) for b in bottlenecks],
         open_critiques=[CritiqueOut.from_row(c) for c in critiques],
         evidence_event_count=supporting,
@@ -142,7 +156,123 @@ async def state_history(
         .all()
     )
     features = await _features(session, [row.process_state_id for row in rows])
-    return [_state_out(row, features.get(row.process_state_id, [])) for row in rows]
+    attribution = await provenance.load(session, (row.agent_run_id for row in rows))
+    return [
+        _state_out(
+            row,
+            features.get(row.process_state_id, []),
+            attribution.get(row.agent_run_id) if row.agent_run_id else None,
+        )
+        for row in rows
+    ]
+
+
+@router.get("/{process_id}/timeline", response_model=ProcessTimelineOut)
+async def timeline(
+    process_id: uuid.UUID, session: SessionDep, as_of: AsOfDep, page: PageDep
+) -> ProcessTimelineOut:
+    """State changes, belief changes, evidence and critiques on one axis (#20).
+
+    Three separate lists would leave the reader joining them by eye, and the
+    join is the point: a belief change is only defensible next to the evidence
+    that arrived just before it. The entries carry both dates — when the thing
+    happened and when the system learned it — because a document published in
+    July and ingested in August belongs in two different places depending on
+    which question is being asked.
+    """
+    entries: list[TimelineEntryOut] = []
+
+    state_query: Select[tuple[ProcessState]] = select(ProcessState).where(
+        ProcessState.process_id == process_id
+    )
+    for row in (
+        (await session.execute(recorded_by(state_query, ProcessState, as_of))).scalars().all()
+    ):
+        entries.append(
+            TimelineEntryOut(
+                kind="state",
+                occurred_at=row.observed_at,
+                recorded_at=row.recorded_at,
+                title=row.categorical_state.value,
+                detail=f"{row.archetype.value} at confidence {row.state_confidence:.2f}",
+                subject_id=row.process_state_id,
+                state_label=row.categorical_state,
+            )
+        )
+
+    journal_query: Select[tuple[JournalEntry]] = select(JournalEntry).where(
+        JournalEntry.subject_id == process_id
+    )
+    for row in (
+        (await session.execute(recorded_by(journal_query, JournalEntry, as_of))).scalars().all()
+    ):
+        entries.append(
+            TimelineEntryOut(
+                kind="journal",
+                occurred_at=row.observed_at,
+                recorded_at=row.recorded_at,
+                title=row.summary,
+                detail=row.kind.value,
+                subject_id=row.triggering_event_id,
+                confidence_before=row.confidence_before,
+                confidence_after=row.confidence_after,
+            )
+        )
+
+    critique_query: Select[tuple[Critique]] = select(Critique).where(
+        Critique.subject_id == process_id
+    )
+    for row in (
+        (await session.execute(recorded_by(critique_query, Critique, as_of))).scalars().all()
+    ):
+        entries.append(
+            TimelineEntryOut(
+                kind="critique",
+                occurred_at=row.observed_at,
+                recorded_at=row.recorded_at,
+                title=row.statement,
+                detail=f"{row.kind.value}, severity {row.severity:.1f}",
+                subject_id=row.critique_id,
+                # A critique is evidence against the thesis surviving unchanged.
+                supports=False,
+            )
+        )
+
+    evidence_query = (
+        select(EvidenceLink, Event)
+        .join(Event, Event.event_id == EvidenceLink.evidence_id)
+        .where(
+            EvidenceLink.subject_id == process_id,
+            EvidenceLink.retracted_at.is_(None),
+            Event.valid_to.is_(None),
+        )
+    )
+    if as_of is not None:
+        evidence_query = evidence_query.where(EvidenceLink.created_at <= as_of)
+    for link, event in (await session.execute(evidence_query)).all():
+        entries.append(
+            TimelineEntryOut(
+                kind="evidence",
+                occurred_at=event.occurred_at,
+                recorded_at=link.created_at,
+                title=event.title,
+                detail=(
+                    f"{event.independent_source_count} independent source(s), "
+                    f"materiality {event.materiality:.1f}"
+                ),
+                subject_id=event.event_id,
+                supports=link.supports,
+            )
+        )
+
+    # Sorted by when it happened, not when it was learned: the axis the reader
+    # is looking at is the world's, and `recorded_at` rides along so a replay
+    # can still tell the difference.
+    entries.sort(key=lambda entry: (entry.occurred_at, entry.recorded_at), reverse=True)
+    return ProcessTimelineOut(
+        process_id=process_id,
+        entries=entries[page.offset : page.offset + page.limit],
+    )
 
 
 @router.get("/{process_id}/journal", response_model=list[JournalEntryOut])
@@ -165,16 +295,21 @@ async def journal(
         .scalars()
         .all()
     )
+    attribution = await provenance.load(session, (row.agent_run_id for row in rows))
     return [
         JournalEntryOut(
             id=row.journal_entry_id,
             kind=row.kind.value,
             summary=row.summary,
+            subject_id=row.subject_id,
+            subject_type=row.subject_type,
             observed_at=row.observed_at,
+            recorded_at=row.recorded_at,
             confidence_before=row.confidence_before,
             confidence_after=row.confidence_after,
             changes=list(row.changes),
             triggering_event_id=row.triggering_event_id,
+            provenance=attribution.get(row.agent_run_id) if row.agent_run_id else None,
         )
         for row in rows
     ]
@@ -300,7 +435,9 @@ def _summary(process: Process, state: ProcessState | None) -> ProcessSummaryOut:
 
 
 def _state_out(
-    state: ProcessState, features: list[ProcessStateFeature] | None = None
+    state: ProcessState,
+    features: list[ProcessStateFeature] | None = None,
+    attribution: ProvenanceOut | None = None,
 ) -> ProcessStateOut:
     return ProcessStateOut(
         id=state.process_state_id,
@@ -316,6 +453,7 @@ def _state_out(
         transition_beliefs=dict(state.transition_beliefs),
         transition_indicators=list(state.transition_indicators),
         reversal_indicators=list(state.reversal_indicators),
+        provenance=attribution,
     )
 
 

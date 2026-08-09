@@ -214,6 +214,31 @@ class CritiqueStatus(StrEnum):
     """It turned out to be right — the thesis was damaged."""
 
 
+class EvidenceDependenceKind(StrEnum):
+    """How two pieces of evidence fail to be independent (agent doc §10.2).
+
+    Ontology §47 says twenty articles repeating one report are not twenty
+    pieces of evidence. Within one Event, syndication is detectable from text
+    overlap. *Across* Events it is not: two outlets can report the same company
+    statement in entirely different words, days apart, and the observation
+    behind them is still one observation.
+
+    The kinds are ordered by how much they reduce independence. A shared source
+    means one observation; derivative reporting means one observation plus
+    commentary; a repeated claim means the same assertion made twice, which may
+    or may not rest on the same observation.
+    """
+
+    SHARED_SOURCE = "shared_source"
+    """Both rest on the same primary document or statement."""
+
+    DERIVATIVE_REPORTING = "derivative_reporting"
+    """One reports the other rather than observing independently."""
+
+    REPEATED_CLAIM = "repeated_claim"
+    """The same assertion restated, without a new observation behind it."""
+
+
 class AssetClass(StrEnum):
     """Ontology §14. V1 expresses theses through the underlying asset only —
     options and derivatives are explicitly out of scope."""
@@ -252,7 +277,16 @@ class ScoreFamily(StrEnum):
 
 class ThesisQualityDimension(StrEnum):
     """Ontology §17 — 'Is the underlying Process real, coherent and likely to
-    continue?'"""
+    continue?'
+
+    The nine axes of ontology §42, plus ``DATA_QUALITY``. Agent doc §11.1 lists
+    ten and §42 lists nine; the extra one is data quality, and it is kept
+    because it asks a question no other axis does — how reliable the underlying
+    observations are, as distinct from how many there are
+    (``ACCUMULATED_EVIDENCE``) or how independent
+    (``EVIDENCE_INDEPENDENCE``). A restated filing and a measured tonnage are
+    not equally good inputs, and without this axis nothing says so.
+    """
 
     LOGICAL_COHERENCE = "logical_coherence"
     ACCUMULATED_EVIDENCE = "accumulated_evidence"
@@ -261,6 +295,7 @@ class ThesisQualityDimension(StrEnum):
     COUNTERFACTUAL_ROBUSTNESS = "counterfactual_robustness"
     EVIDENCE_INDEPENDENCE = "evidence_independence"
     CAUSAL_COHERENCE = "causal_coherence"
+    DATA_QUALITY = "data_quality"
     CONTRADICTION = "contradiction"
     UNCERTAINTY = "uncertainty"
 

@@ -21,6 +21,7 @@ from econiq_orchestration import PIPELINE, WorkQueue
 from fastapi import APIRouter, Query
 from sqlalchemy import Select, select
 
+from econiq_api import provenance
 from econiq_api.deps import AsOfDep, GraphDep, PageDep, SessionDep, SessionFactoryDep
 from econiq_api.errors import not_found
 from econiq_api.schemas import (
@@ -120,6 +121,9 @@ async def scores(
         grouped.setdefault(dimension.scorecard_id, []).append(dimension)
 
     subject = await graph.node(subject_id)
+    # §23 requires model version on every explanation, and a scorecard is the
+    # explanation people reach for first.
+    attribution = await provenance.load(session, (c.agent_run_id for c in cards))
     return [
         ScorecardOut(
             id=card.scorecard_id,
@@ -148,6 +152,7 @@ async def scores(
                 )
                 for d in grouped.get(card.scorecard_id, [])
             ],
+            provenance=(attribution.get(card.agent_run_id) if card.agent_run_id else None),
         )
         for card in cards
     ]

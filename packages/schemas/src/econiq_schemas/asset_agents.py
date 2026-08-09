@@ -11,7 +11,13 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Self
 
-from econiq_ontology import AssetClass, Confidence, ExposureKind, Score10
+from econiq_ontology import (
+    AssetClass,
+    AssetQualityDimension,
+    Confidence,
+    ExposureKind,
+    Score10,
+)
 from pydantic import Field, model_validator
 
 from econiq_schemas.base import AgentInput, AgentIO, AgentOutput, Cited
@@ -131,3 +137,66 @@ class AgentBoundaryViolation(AgentIO):
     expected_layer: str
     observed_reference: str
     detail: str
+
+
+# --------------------------------------------------------------------------- #
+# Asset Quality agent (issue #76, agent doc §8.4)
+# --------------------------------------------------------------------------- #
+
+
+class AssetAxisScore(Cited):
+    """One Asset Quality axis, with fact and inference kept apart (§8.4)."""
+
+    dimension: AssetQualityDimension
+    value: Score10
+    why_not_higher: str = Field(min_length=1)
+    facts: list[str] = Field(default_factory=list)
+    inferences: list[str] = Field(default_factory=list)
+    counterarguments: list[str] = Field(
+        default_factory=list,
+        description=(
+            "§8.4 asks for these explicitly. An assessment with no stated "
+            "counterargument is a pitch."
+        ),
+    )
+
+
+class AssetQualityInput(AgentInput):
+    """One Asset, judged *as an expression of one Capability*.
+
+    The Capability is not optional context. The same company is a strong
+    expression of one Capability and a weak expression of another, and a score
+    without one attached is a company rating rather than a thesis expression
+    (ontology §17).
+    """
+
+    asset_name: str
+    asset_class: str
+    ticker: str | None = None
+    capability_name: str
+    capability_description: str
+    process_name: str
+    exposure_summaries: list[str] = Field(default_factory=list)
+    claim_texts: dict[str, str] = Field(default_factory=dict)
+    #: Technical axes the system measured. Supplied so the agent has the picture,
+    #: and named as measured so it does not score them.
+    computed_axes: dict[str, float] = Field(default_factory=dict)
+
+
+class AssetQualityOutput(AgentOutput):
+    """Qualitative axes only.
+
+    No valuation, no price view, no opinion on whether the underlying Process is
+    real — that is Thesis Quality, and ontology §17 keeps the families apart by
+    construction.
+    """
+
+    axes: list[AssetAxisScore] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _no_axis_scored_twice(self) -> Self:
+        seen = [axis.dimension for axis in self.axes]
+        duplicates = {d for d in seen if seen.count(d) > 1}
+        if duplicates:
+            raise ValueError(f"axis scored more than once: {sorted(d.value for d in duplicates)}")
+        return self

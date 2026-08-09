@@ -5,6 +5,7 @@ stopping at their ontology layer. Everything they produce carries the agent run
 that produced it.
 """
 
+from econiq_agents import asset_metrics
 from econiq_agents.asset_agents import (
     AssetDiscoveryAgent,
     AssetExposureAgent,
@@ -21,7 +22,20 @@ from econiq_agents.asset_persistence import (
     ResolvedAsset,
     resolution_rate,
 )
+from econiq_agents.asset_quality_agent import AssetQualityAgent
+from econiq_agents.asset_scoring_stage import (
+    AssetScore,
+    AssetScoringOutcome,
+    AssetScoringStage,
+)
 from econiq_agents.asset_stage import AssetDiscoveryStage, AssetOutcome
+from econiq_agents.assistant import (
+    NEEDS_SUBJECT,
+    OPERATORS,
+    RESOURCES,
+    PlanEvaluator,
+    ResearchAssistantAgent,
+)
 from econiq_agents.capability_agents import (
     BindingClarityEvaluator,
     BottleneckIdentificationAgent,
@@ -51,6 +65,12 @@ from econiq_agents.clustering_metrics import (
     duplicate_suppression_rate,
     evaluate_clustering,
 )
+from econiq_agents.counterfactual_agent import (
+    CounterfactualAgent,
+    DiversityEvaluator,
+    FalsifiabilityEvaluator,
+    PlausibilityEvaluator,
+)
 from econiq_agents.critic_agent import (
     CoverageReport,
     Independence,
@@ -61,6 +81,13 @@ from econiq_agents.critic_agent import (
     coverage_of,
 )
 from econiq_agents.critic_stage import CritiqueOutcome, ProcessCritiqueStage
+from econiq_agents.dependence import (
+    Dependence,
+    EvidenceItem,
+    effective_sources,
+    structural_dependencies,
+    undecided_pairs,
+)
 from econiq_agents.document_agents import (
     ClaimExtractionAgent,
     DocumentClassifierAgent,
@@ -96,6 +123,8 @@ from econiq_agents.independence import (
     jaccard,
     shingles,
 )
+from econiq_agents.independence_agent import EvidenceIndependenceAgent
+from econiq_agents.independence_stage import IndependenceOutcome, IndependenceStage
 from econiq_agents.persistence import (
     AgentRunRecorder,
     ClaimPersistResult,
@@ -142,6 +171,13 @@ from econiq_agents.state_agents import (
 )
 from econiq_agents.state_persistence import AppliedArchetype, RecordedState, StateWriter
 from econiq_agents.state_stage import ProcessStateStage, StateOutcome
+from econiq_agents.thesis_scorer import (
+    COMPUTED_AXES,
+    JUDGED_AXES,
+    UNAVAILABLE_AXES,
+    ThesisScoringAgent,
+)
+from econiq_agents.thesis_stage import ThesisOutcome, ThesisStage
 
 __all__ = [
     "ASSET_DISCOVERY_V1",
@@ -151,15 +187,21 @@ __all__ = [
     "CAPABILITY_MAPPING_V1",
     "CLAIM_EXTRACTION_V1",
     "COMMODITIES",
+    "COMPUTED_AXES",
     "CURRENCIES",
     "DOCUMENT_CLASSIFIER_V1",
     "EVENT_RESOLUTION_V1",
     "EVENT_SIGNIFICANCE_V1",
+    "JUDGED_AXES",
+    "NEEDS_SUBJECT",
+    "OPERATORS",
     "PROCESS_ARCHETYPE_V1",
     "PROCESS_DISCOVERY_V1",
     "PROCESS_STATE_V1",
     "PROCESS_UPDATE_V1",
     "REFERENCE_UNIVERSE",
+    "RESOURCES",
+    "UNAVAILABLE_AXES",
     "AgentRunRecorder",
     "AppliedArchetype",
     "AppliedUpdate",
@@ -167,7 +209,11 @@ __all__ = [
     "AssetDiscoveryStage",
     "AssetExposureAgent",
     "AssetOutcome",
+    "AssetQualityAgent",
     "AssetResolution",
+    "AssetScore",
+    "AssetScoringOutcome",
+    "AssetScoringStage",
     "AssetWriter",
     "BindingClarityEvaluator",
     "BottleneckIdentificationAgent",
@@ -183,8 +229,11 @@ __all__ = [
     "ClusteringMetrics",
     "ConfluenceResult",
     "ConfluenceScopeEvaluator",
+    "CounterfactualAgent",
     "CoverageReport",
     "CritiqueOutcome",
+    "Dependence",
+    "DiversityEvaluator",
     "DocumentClassifierAgent",
     "DocumentExtractionStage",
     "Embedder",
@@ -194,13 +243,18 @@ __all__ = [
     "EventResolutionStage",
     "EventSignificanceAgent",
     "EventWriter",
+    "EvidenceIndependenceAgent",
+    "EvidenceItem",
     "ExposureWriter",
     "ExtractionOutcome",
+    "FalsifiabilityEvaluator",
     "GraphWriter",
     "HashingEmbedder",
     "IllegalEdgeError",
     "Independence",
     "IndependenceAssessment",
+    "IndependenceOutcome",
+    "IndependenceStage",
     "InstrumentBreadthEvaluator",
     "LayerBoundaryEvaluator",
     "MeasuredFeatureEvaluator",
@@ -212,6 +266,8 @@ __all__ = [
     "PersistedExposures",
     "PersistedProcess",
     "PersistedRequirement",
+    "PlanEvaluator",
+    "PlausibilityEvaluator",
     "ProcessArchetypeAgent",
     "ProcessCriticAgent",
     "ProcessCritiqueStage",
@@ -229,6 +285,7 @@ __all__ = [
     "RecordedState",
     "ReferenceInstrument",
     "RequirementStructureEvaluator",
+    "ResearchAssistantAgent",
     "ResolvedAsset",
     "ResolvedCapability",
     "ResolvedEvent",
@@ -240,14 +297,19 @@ __all__ = [
     "StateTransitionEvaluator",
     "StateWriter",
     "TestabilityEvaluator",
+    "ThesisOutcome",
+    "ThesisScoringAgent",
+    "ThesisStage",
     "TransitionSignificance",
     "WrittenEdge",
     "assess_independence",
+    "asset_metrics",
     "classify_transition",
     "clusters_from_pairs",
     "cosine_similarity",
     "coverage_of",
     "duplicate_suppression_rate",
+    "effective_sources",
     "evaluate_clustering",
     "independent_support",
     "jaccard",
@@ -260,4 +322,6 @@ __all__ = [
     "resolve_span",
     "shingles",
     "slugify",
+    "structural_dependencies",
+    "undecided_pairs",
 ]

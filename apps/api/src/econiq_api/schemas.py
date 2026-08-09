@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from econiq_ontology import (
     AssetClass,
@@ -107,19 +107,35 @@ class ProcessStateOut(ApiModel):
     )
     transition_indicators: list[str] = Field(default_factory=list)
     reversal_indicators: list[str] = Field(default_factory=list)
+    provenance: ProvenanceOut | None = None
 
 
 class JournalEntryOut(ApiModel):
-    """Why the system changed its mind (PRD §21)."""
+    """Why the system changed its mind (PRD §21).
+
+    Immutable once written. The journal is the audit trail, and an audit trail
+    that can be edited is a narrative.
+    """
 
     id: uuid.UUID
     kind: str
     summary: str
+    subject_id: uuid.UUID
+    subject_type: EntityType
     observed_at: datetime
+    recorded_at: datetime
     confidence_before: float | None
     confidence_after: float | None
     changes: list[dict[str, Any]] = Field(default_factory=list)
     triggering_event_id: uuid.UUID | None = None
+    provenance: ProvenanceOut | None = Field(
+        default=None,
+        description=(
+            "The run that changed its mind. #31 asks every entry to reach a "
+            "model version — a belief change nobody can attribute is a belief "
+            "change nobody can review."
+        ),
+    )
 
 
 class CritiqueOut(ApiModel):
@@ -187,6 +203,41 @@ class EventOut(ApiModel):
     revision: int
 
 
+class ProvenanceOut(ApiModel):
+    """Who produced a derived row, with what, and when (ui_concept §23, §29).
+
+    One shape for every explanation. §23 requires model version, timestamp and
+    confidence on all of them, and three near-identical bespoke versions would
+    have drifted the first time one of them gained a field.
+    """
+
+    agent_run_id: uuid.UUID
+    agent_name: str
+    agent_version: str
+    model: str | None = None
+    provider: str | None = None
+    prompt_name: str | None = None
+    prompt_version: str | None = None
+    prompt_content_hash: str | None = Field(
+        default=None,
+        description=(
+            "First 12 characters. Enough to tell whether two rows came from the "
+            "same prompt text, which is the question a reader actually has."
+        ),
+    )
+    as_of: datetime = Field(description="The cut-off the agent was given.")
+    recorded_at: datetime
+    status: str
+    evaluation_passed: bool | None = Field(
+        default=None,
+        description="Whether the deterministic checks accepted this output.",
+    )
+    advisories: list[str] = Field(
+        default_factory=list,
+        description="Non-blocking check failures. The output was accepted with these noted.",
+    )
+
+
 class ClaimOut(ApiModel):
     id: uuid.UUID
     document_id: uuid.UUID
@@ -197,6 +248,21 @@ class ClaimOut(ApiModel):
     extraction_confidence: float
     source_location: dict[str, Any] = Field(
         description="Verified span: the quote and its offsets in the parsed document."
+    )
+    stated_at: datetime | None = Field(
+        default=None,
+        description=(
+            "When the Claim says the thing happened, where that differs from "
+            "when its document was published."
+        ),
+    )
+    provenance: ProvenanceOut | None = Field(
+        default=None,
+        description=(
+            "The extraction run. Null means nothing can be attributed, which is "
+            "shown rather than hidden — an unattributable quotation is exactly "
+            "what the evidence chain exists to prevent."
+        ),
     )
 
 
@@ -225,6 +291,30 @@ class EvidenceTrailOut(ApiModel):
     claim_ids: list[uuid.UUID] = Field(default_factory=list)
     document_ids: list[uuid.UUID] = Field(default_factory=list)
     is_evidenced: bool
+
+
+class ProvenanceInspectionOut(ApiModel):
+    """The full drill-down behind one node (ui_concept §29).
+
+    §29 is explicit that "evidence should never be represented merely as an
+    undifferentiated AI summary". So this returns the Claims themselves, with
+    their verified source spans and the run that extracted each — not counts,
+    and not a paraphrase.
+    """
+
+    subject: NodeRef
+    is_evidenced: bool
+    supporting_events: list[NodeRef] = Field(default_factory=list)
+    contradicting_events: list[NodeRef] = Field(default_factory=list)
+    claims: list[ClaimOut] = Field(default_factory=list)
+    documents: list[DocumentOut] = Field(default_factory=list)
+    independent_source_count: int = Field(
+        default=0,
+        description=(
+            "Distinct reports after syndication collapse, summed over the "
+            "supporting Events — not the document count (ontology §47)."
+        ),
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -408,6 +498,7 @@ class ScorecardOut(ApiModel):
     composite: float | None
     composite_method: str | None
     dimensions: list[ScoreDimensionOut] = Field(default_factory=list)
+    provenance: ProvenanceOut | None = None
 
 
 class GraphNodeOut(ApiModel):
@@ -498,3 +589,320 @@ class HealthOut(ApiModel):
 
 RequirementNodeOut.model_rebuild()
 ProcessDetailOut.model_rebuild()
+
+
+# --------------------------------------------------------------------------- #
+# Discover feed (issue #20, ui_concept §5)
+# --------------------------------------------------------------------------- #
+
+
+class RankComponentOut(ApiModel):
+    """One input to the Discover rank, with the arithmetic left visible.
+
+    Returned so the ranking can be taken apart on screen (#25). A rank nobody
+    can decompose is a number the reader has to take on trust, which is the
+    opposite of what this product is for.
+    """
+
+    name: str
+    raw: float = Field(description="The measurement, in its own units.")
+    normalised: float = Field(ge=0.0, le=1.0)
+    weight: float
+    contribution: float
+
+
+class EmergingProcessOut(ProcessSummaryOut):
+    """A row of the emerging-Process panel (§5.1)."""
+
+    rank_score: float
+    components: list[RankComponentOut] = Field(default_factory=list)
+    evidence_recent: int = Field(description="Evidence links in the trailing window.")
+    evidence_prior: int = Field(description="The window before it, for comparison.")
+    evidence_delta: int
+    contradiction_count: int = Field(
+        description=(
+            "Evidence recorded against this Process. Shown rather than netted "
+            "off: contradiction is a scored dimension, not a deduction (§17)."
+        )
+    )
+    source_breadth: int = Field(
+        description=(
+            "Distinct publishers behind the supporting Events. A media-coverage "
+            "proxy, reported beside the rank rather than inside it — Phase 0 has "
+            "no market data, and calling this 'attention' would make §5.2's "
+            "central claim untestable."
+        )
+    )
+    capability_count: int
+    asset_count: int
+    binding_bottlenecks: list[str] = Field(default_factory=list)
+
+
+class UnavailableInputOut(ApiModel):
+    """A §5.1 ranking input this deployment cannot compute, and why."""
+
+    name: str
+    reason: str
+
+
+class DiscoverFeedOut(ApiModel):
+    """The Discover feed, with its own limits attached.
+
+    ``unavailable_inputs`` is part of the response rather than documentation: a
+    ranking that silently drops half of its stated inputs is a different ranking
+    wearing the same name, and the screen should be able to say so.
+    """
+
+    processes: list[EmergingProcessOut] = Field(default_factory=list)
+    weights: dict[str, float] = Field(default_factory=dict)
+    window_days: int
+    unavailable_inputs: list[UnavailableInputOut] = Field(default_factory=list)
+    is_prediction: Literal[False] = Field(
+        default=False,
+        description=(
+            "A discovery ranking, not a forecast (ui_concept §5.2). Present so a "
+            "client cannot mistake the ordering for a predicted return."
+        ),
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Process timeline (issue #20)
+# --------------------------------------------------------------------------- #
+
+
+class TimelineEntryOut(ApiModel):
+    """One dated thing that happened to a Process.
+
+    State changes, journal entries and evidence arrivals share an axis because
+    the question the Process screen answers is "what changed and why", and the
+    answer is usually an evidence arrival next to the belief change it caused.
+    Three separate lists would leave the reader doing that join by eye.
+    """
+
+    kind: Literal["state", "journal", "evidence", "critique"]
+    occurred_at: datetime = Field(description="When the thing being described happened.")
+    recorded_at: datetime = Field(description="When the system learned it.")
+    title: str
+    detail: str | None = None
+    subject_id: uuid.UUID | None = Field(
+        default=None, description="The Event, State or entry this entry points at."
+    )
+    supports: bool | None = Field(
+        default=None, description="Evidence direction, where the entry is evidence."
+    )
+    confidence_before: float | None = None
+    confidence_after: float | None = None
+    state_label: ProcessStateLabel | None = None
+
+
+class ProcessTimelineOut(ApiModel):
+    process_id: uuid.UUID
+    entries: list[TimelineEntryOut] = Field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- #
+# Archetype State machines (issues #22, #23)
+# --------------------------------------------------------------------------- #
+
+
+class StateNodeOut(ApiModel):
+    """One State on an archetype's machine."""
+
+    state: ProcessStateLabel
+    ordinal: int = Field(description="Position in the developmental sequence.")
+    maturity: float = Field(
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Ordinal normalised to 0-1. The Emergence Radar's maturity axis "
+            "(§5.2). A position on a machine, not an age or a probability."
+        ),
+    )
+    transitions_to: list[str] = Field(default_factory=list)
+    is_terminal: bool
+
+
+class ArchetypeMachineOut(ApiModel):
+    """The State model of one archetype (ontology §8).
+
+    Served so the terminal draws the machine from the ontology rather than from
+    a copy. The sequence defines which States are adjacent, and an inlined copy
+    would drift the first time an archetype gained one.
+    """
+
+    archetype: ProcessArchetype
+    cyclical: bool
+    states: list[StateNodeOut] = Field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- #
+# Confluence search (issue #27, ui_concept §11)
+# --------------------------------------------------------------------------- #
+
+
+class ConfluenceHitOut(ApiModel):
+    """A Capability several selected Processes all reach."""
+
+    capability: NodeRef
+    process_ids: list[uuid.UUID] = Field(
+        default_factory=list, description="Which of the selected Processes reach it."
+    )
+    reached_by: int
+    shortest_hops: int
+    asset_count: int = Field(
+        description="Assets expressing this Capability — where the confluence becomes investable."
+    )
+
+
+class ConfluenceResultOut(ApiModel):
+    """§11's AND semantics, explicitly.
+
+    ``require_all`` is the difference between "Capabilities relevant to any of
+    these Processes" — which is a union and mostly noise — and "Capabilities
+    every one of them needs", which is the question ui_concept §11 poses and the
+    reason confluence is a distinct feature rather than a filter.
+    """
+
+    process_ids: list[uuid.UUID] = Field(default_factory=list)
+    require_all: bool
+    capabilities: list[ConfluenceHitOut] = Field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- #
+# Semantic alerts (issue #32, PRD §20; ui_concept §19, §26)
+# --------------------------------------------------------------------------- #
+
+
+class AlertOut(ApiModel):
+    """A change to the thesis, not to a price.
+
+    PRD §20 and ui_concept §19 are both explicit that this monitoring watches
+    thesis integrity. The copy says what changed about the argument — "the
+    binding Bottleneck may be resolving" — because an alert that reads "XYZ down
+    5%" tells the reader something they already have a terminal for.
+    """
+
+    id: str = Field(description="Deterministic: the same change never alerts twice.")
+    kind: str
+    severity: str = Field(description="'informational', 'notable' or 'urgent'.")
+    subject: NodeRef
+    headline: str
+    detail: str
+    observed_at: datetime
+    #: What to read to decide whether it matters.
+    evidence_id: uuid.UUID | None = None
+    confidence_before: float | None = None
+    confidence_after: float | None = None
+
+
+# --------------------------------------------------------------------------- #
+# Asset comparison (issue #29, ui_concept §13)
+# --------------------------------------------------------------------------- #
+
+
+class ComparisonCellOut(ApiModel):
+    """One Asset's value on one dimension, or the reason there isn't one."""
+
+    dimension: str
+    value: float | None = None
+    confidence: float | None = None
+    method: str | None = None
+    inputs: dict[str, float] = Field(default_factory=dict)
+    rationale: str | None = None
+    unavailable_reason: str | None = Field(
+        default=None,
+        description=(
+            "Why this cell is empty. A gap with a reason is more informative "
+            "than a plausible number: once both render as numbers the reader "
+            "cannot tell a measured multiple from a guessed one."
+        ),
+    )
+
+
+class ComparisonColumnOut(ApiModel):
+    asset: NodeRef
+    ticker: str | None = None
+    asset_class: AssetClass
+    exposure_magnitude: float | None = Field(
+        default=None, description="How strongly this Asset expresses the Capability."
+    )
+    cells: list[ComparisonCellOut] = Field(default_factory=list)
+    provenance: ProvenanceOut | None = None
+
+
+class AssetComparisonOut(ApiModel):
+    """§13's matrix, with its holes labelled.
+
+    No overall score. §13 shows an "Overall Expression" row and asks that users
+    be able to change ranking weights without changing the underlying scores —
+    which means the weighting belongs to the reader, not to the API. A server-
+    computed overall would be one weighting frozen into the data, and every
+    client would then be arguing with it.
+    """
+
+    capability: NodeRef
+    dimensions: list[str] = Field(default_factory=list)
+    columns: list[ComparisonColumnOut] = Field(default_factory=list)
+    unavailable: list[UnavailableInputOut] = Field(
+        default_factory=list,
+        description="Analyses no source in this deployment supports.",
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Counterfactuals (issue #30, ui_concept §14.3)
+# --------------------------------------------------------------------------- #
+
+
+class CounterfactualOut(ApiModel):
+    """An alternative world the thesis has to survive.
+
+    §14.3 requires the underwriting screen to "explicitly surface disconfirming
+    evidence", and its example list is a set of alternative worlds. These are
+    that list, produced by the Counterfactual agent (#66) rather than written by
+    hand.
+    """
+
+    id: uuid.UUID
+    process_id: uuid.UUID
+    challenged_assumption: str
+    alternative_world: str
+    affected_links: list[str] = Field(default_factory=list)
+    assets_harmed: list[str] = Field(default_factory=list)
+    observable_indicators: list[str] = Field(
+        default_factory=list,
+        description="What would be seen if this were the real world.",
+    )
+    plausibility: float
+    severity_if_true: float
+    is_most_dangerous: bool
+    observed_at: datetime
+    provenance: ProvenanceOut | None = None
+
+    @property
+    def threat(self) -> float:
+        return (self.plausibility / 10.0) * (self.severity_if_true / 10.0)
+
+
+# --------------------------------------------------------------------------- #
+# Workspace (issue #19)
+# --------------------------------------------------------------------------- #
+
+
+class WorkspaceOut(ApiModel):
+    id: uuid.UUID
+    name: str
+    kind: str
+    external_id: str
+    user_id: str
+
+
+class WatchlistItemOut(ApiModel):
+    """A node someone is watching. The node itself is shared; this is not."""
+
+    id: uuid.UUID
+    node: NodeRef
+    note: str | None = None
+    added_by: str
+    added_at: datetime

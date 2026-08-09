@@ -135,6 +135,8 @@ way.
 |---|---|
 | #35 Vendor abstraction | `MarketDataProvider` with declared coverage; survivorship-free universe |
 | #36 Analytical layer | immutable Parquet snapshots, DuckDB views, Polars frames |
+| #38 Outcome engine | deterministic forward outcomes, observation date frozen at construction |
+| #44 Forward returns | empirical distributions — what happened, never what will |
 
 ```bash
 uv run python -c "..."   # export a snapshot; see services/market/warehouse.py
@@ -144,6 +146,20 @@ Snapshots are immutable and carry both clocks. `as_known_at` filters on
 `observed_at` **and** `recorded_at` — dropping the second is the mistake that
 makes a backtest look brilliant, because it hands every past day the adjustment
 factors that only exist after later corporate actions.
+
+**Phase 2 is split along its data dependency.** The Asset half runs on price
+history and is being built now; the Process half — historical Process timelines
+and State snapshots (#37), and the Process side of State-conditioned episodes
+(#40) — needs a document archive spanning past episodes, which is being
+assembled separately. Those issues are parked rather than half-built on
+synthetic data.
+
+Forward returns are phrased as ontology §35 requires: *"among historically
+comparable situations, the subsequent 12-month return was…"*, never a
+probability. `Distribution` has no `probability` field and no `expected_return`,
+small samples say so in their own sentence, and censored episodes are counted
+rather than dropped — excluding them biases the sample toward episodes that
+already resolved.
 
 #35 is delivered in the half the data supports. Tiingo serves two of tech rec
 §19's seven facets; fundamentals, ownership, commodities and macro are declared

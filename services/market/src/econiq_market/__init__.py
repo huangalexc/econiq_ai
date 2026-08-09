@@ -24,6 +24,14 @@ from econiq_market.client import (
     parse_universe_csv,
     parse_universe_zip,
 )
+from econiq_market.distribution import (
+    INDICATIVE_BELOW,
+    DispersionNote,
+    Distribution,
+    across_horizons,
+    dispersion,
+    summarise,
+)
 from econiq_market.ingest import (
     DEFAULT_BACKFILL,
     SOURCE,
@@ -31,6 +39,14 @@ from econiq_market.ingest import (
     MarketIngest,
     SymbolResult,
     latest_known_at,
+)
+from econiq_market.outcomes import (
+    HORIZONS,
+    Episode,
+    Outcome,
+    compute,
+    episodes_from,
+    frozen_before,
 )
 from econiq_market.provider import (
     TIINGO_COVERAGE,
@@ -49,10 +65,15 @@ from econiq_market.warehouse import (
 
 __all__ = [
     "DEFAULT_BACKFILL",
+    "HORIZONS",
+    "INDICATIVE_BELOW",
     "SCHEMA_VERSION",
     "SOURCE",
     "TIINGO_COVERAGE",
     "Coverage",
+    "DispersionNote",
+    "Distribution",
+    "Episode",
     "ExportResult",
     "Facet",
     "FacetUnavailableError",
@@ -61,6 +82,7 @@ __all__ = [
     "MarketDataProvider",
     "MarketIngest",
     "MissingTokenError",
+    "Outcome",
     "PriceBar",
     "Snapshot",
     "SymbolNotCoveredError",
@@ -69,10 +91,16 @@ __all__ = [
     "TiingoError",
     "UniverseEntry",
     "Warehouse",
+    "across_horizons",
     "as_known_at",
+    "compute",
+    "dispersion",
+    "episodes_from",
+    "frozen_before",
     "latest_known_at",
     "parse_fx_csv",
     "parse_price_csv",
     "parse_universe_csv",
     "parse_universe_zip",
+    "summarise",
 ]

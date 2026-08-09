@@ -137,6 +137,7 @@ way.
 | #36 Analytical layer | immutable Parquet snapshots, DuckDB views, Polars frames |
 | #38 Outcome engine | deterministic forward outcomes, observation date frozen at construction |
 | #44 Forward returns | empirical distributions — what happened, never what will |
+| #39 Point-in-time | a `Lens` with no unfiltered read, plus leakage faults proving the checks fire |
 
 ```bash
 uv run python -c "..."   # export a snapshot; see services/market/warehouse.py
@@ -153,6 +154,13 @@ and State snapshots (#37), and the Process side of State-conditioned episodes
 (#40) — needs a document archive spanning past episodes, which is being
 assembled separately. Those issues are parked rather than half-built on
 synthetic data.
+
+Point-in-time correctness is enforced rather than audited. A `Lens` carries the
+cut-off and every read through it is already filtered — there is no method that
+returns unfiltered data, so analysis code cannot read the future by omission.
+The subtle leak is a row observed *inside* the window whose value was only
+learned afterwards; a naive "no future dates" check passes it, which is why
+agent doc §20 says the boundary matters more than the convention.
 
 Forward returns are phrased as ontology §35 requires: *"among historically
 comparable situations, the subsequent 12-month return was…"*, never a

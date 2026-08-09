@@ -65,6 +65,12 @@ from econiq_eval.harness import (
     render_markdown,
     run_harness,
 )
+from econiq_eval.historical_faults import (
+    LeakFault,
+    LeakResult,
+)
+from econiq_eval.historical_faults import missed as leaks_missed
+from econiq_eval.historical_faults import run as run_leak_injection
 from econiq_eval.metrics import (
     AccuracyMetrics,
     CalibrationMetrics,
@@ -102,6 +108,8 @@ __all__ = [
     "LabelledClaim",
     "LabelledExposure",
     "LabelledRequirement",
+    "LeakFault",
+    "LeakResult",
     "PointInTimeAudit",
     "ProcessCase",
     "ProcessOutcome",
@@ -119,10 +127,12 @@ __all__ = [
     "grade_clustering",
     "grade_extraction",
     "grade_processes",
+    "leaks_missed",
     "load_benchmark",
     "load_forecast_benchmark",
     "render_markdown",
     "run_fault_injection",
     "run_harness",
+    "run_leak_injection",
     "summarise",
 ]

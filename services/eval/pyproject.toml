@@ -12,6 +12,7 @@ dependencies = [
     "econiq-agents",
     "econiq-ingestion",
     "econiq-orchestration",
+    "econiq-market",
 ]
 
 [project.scripts]
@@ -26,6 +27,7 @@ econiq-graph = { workspace = true }
 econiq-agents = { workspace = true }
 econiq-ingestion = { workspace = true }
 econiq-orchestration = { workspace = true }
+econiq-market = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

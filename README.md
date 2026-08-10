@@ -138,6 +138,8 @@ way.
 | #38 Outcome engine | deterministic forward outcomes, observation date frozen at construction |
 | #44 Forward returns | empirical distributions — what happened, never what will |
 | #39 Point-in-time | a `Lens` with no unfiltered read, plus leakage faults proving the checks fire |
+| #43 Asset matching | outcome-blind by construction; outcomes join only after matching |
+| #46 Pattern search | configurations, not companies — with the Process half declared missing |
 
 ```bash
 uv run python -c "..."   # export a snapshot; see services/market/warehouse.py
